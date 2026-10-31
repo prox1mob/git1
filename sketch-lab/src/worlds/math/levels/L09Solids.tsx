@@ -200,7 +200,7 @@ function CubeLesson() {
 
   const tool = (
     <div style={{ position: 'relative' }}>
-      <ThreeStage setup={setup} onFrame={onFrame} camPos={[9, 7.5, 12]} />
+      <ThreeStage setup={setup} onFrame={onFrame} camPos={[7.5, 6.5, 10]} />
       <div className="overlay-badge">
         <T k="cube" /> · side {s} · {unfold > 0.001 ? 'unfolding into a net' : units ? `${Math.round(fill) * s * s} of ${s ** 3} unit cubes` : 'drag to spin'}
       </div>
