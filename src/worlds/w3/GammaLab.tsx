@@ -118,7 +118,7 @@ function GradientStrip({ gamma }: { gamma: number }) {
 }
 
 /** Encoding curves: how standards map linear light to code values. */
-function TransferPlot() {
+export function TransferPlot() {
   const [zoom, setZoom] = useState(false);
   const [show, setShow] = useState({ srgb: true, p22: true, r709: true });
   const S = 260, pad = 14, W = S - pad * 2;
