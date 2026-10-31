@@ -59,6 +59,8 @@ export function GradeCanvas({
   const onAnalysisRef = useRef(onAnalysis);
   onAnalysisRef.current = onAnalysis;
   const keys = useRef({ source: '', capture: '' });
+  /** Everything that affects the picture; re-render only when it changes (or for live video). */
+  const renderKey = useRef('');
 
   const schedule = () => {
     if (raf.current) return;
@@ -87,6 +89,7 @@ export function GradeCanvas({
     try {
       engine.current = new GradeEngine(canvas.current);
       keys.current = { source: '', capture: '' };
+      renderKey.current = '';
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       return;
@@ -124,6 +127,11 @@ export function GradeCanvas({
     else if (source.kind === 'video') e.markSourceDirty();
     const ck = JSON.stringify(capture ?? {});
     if (ck !== keys.current.capture) { keys.current.capture = ck; e.setCapture(capture ?? {}); }
+    const rk = `${sk}|${ck}|${JSON.stringify(params)}|${JSON.stringify(view ?? null)}|${time}|${beforeRolloff ?? ''}`;
+    // Parents often store scope frames in state, which re-renders us; skip identical frames so
+    // the GPU sits idle when nothing changed (important on tablets).
+    if (rk === renderKey.current && source.kind !== 'video') return;
+    renderKey.current = rk;
     e.setParams(params);
     e.setView(view ?? defaultView());
     e.setTime(time);

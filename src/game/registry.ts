@@ -42,4 +42,9 @@ export const LEVEL_COMPONENTS: Record<string, LevelComponent> = {
   'w4-8': lazy(() => import('../worlds/w4/FilmEmulation')),
   'w4-9': lazy(() => import('../worlds/w4/MoodNarrative')),
   'w4-10': lazy(() => import('../worlds/w4/Colourist')),
+  'w5-1': lazy(() => import('../worlds/w5/missions').then((m) => ({ default: m.Mission1 }))),
+  'w5-2': lazy(() => import('../worlds/w5/missions').then((m) => ({ default: m.Mission2 }))),
+  'w5-3': lazy(() => import('../worlds/w5/missions').then((m) => ({ default: m.Mission3 }))),
+  'w5-4': lazy(() => import('../worlds/w5/missions').then((m) => ({ default: m.Mission4 }))),
+  'w5-5': lazy(() => import('../worlds/w5/ShortFilm')),
 };

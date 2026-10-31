@@ -97,6 +97,7 @@ export const READY = new Set<string>([
   'w2-1', 'w2-2', 'w2-3', 'w2-4', 'w2-5', 'w2-6', 'w2-7', 'w2-8',
   'w3-1', 'w3-2', 'w3-3', 'w3-4', 'w3-5', 'w3-6', 'w3-7', 'w3-8', 'w3-9', 'w3-10',
   'w4-1', 'w4-2', 'w4-3', 'w4-4', 'w4-5', 'w4-6', 'w4-7', 'w4-8', 'w4-9', 'w4-10',
+  'w5-1', 'w5-2', 'w5-3', 'w5-4', 'w5-5',
 ]);
 
 const L = (world: WorldId, n: number, title: string, summary: string, skills: SkillId[], minutes = 6, _status: LevelStatus = 'soon', xp = 100, requires?: string[]): LevelDef => ({

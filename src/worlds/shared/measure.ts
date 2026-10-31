@@ -50,6 +50,7 @@ export const pct = (x: number, d = 1) => `${(x * 100).toFixed(d)}%`;
 
 /** Average CIELAB over the frame (sampled), for overall colour tendencies of a look. */
 export function frameLab(f: Frame, step = 3) {
+  step = Math.max(1, Math.floor(step) || 3);
   let L = 0, a = 0, b = 0, C = 0, n = 0;
   for (let y = 0; y < f.height; y += step) for (let x = 0; x < f.width; x += step) {
     const i = (y * f.width + x) * 4;

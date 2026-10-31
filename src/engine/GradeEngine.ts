@@ -272,14 +272,14 @@ export class GradeEngine {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   }
 
-  private renderGrade(target: Target | null, params: GradeParams, view: ViewSpec) {
+  private renderGrade(target: Target | null, params: GradeParams, view: ViewSpec, srcOverride?: Target, useHalo = true) {
     const gl = this.gl;
     const p = this.program('grade', gradeFrag);
     gl.useProgram(p.prog);
     gl.bindFramebuffer(gl.FRAMEBUFFER, target ? target.fbo : null);
     gl.viewport(0, 0, target ? target.w : this.width, target ? target.h : this.height);
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.src!.tex);
+    gl.bindTexture(gl.TEXTURE_2D, (srcOverride ?? this.src!).tex);
     this.u1i(p, 'u_src', 0);
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, this.haloA?.tex ?? this.src!.tex);
@@ -322,7 +322,7 @@ export class GradeEngine {
     this.u1f(p, 'u_sat', params.saturation);
     this.u1f(p, 'u_vib', params.vibrance);
     this.u1f(p, 'u_density', params.density);
-    this.u1f(p, 'u_halation', params.halation > 0 && this.haloA ? params.halation * 1.6 : 0);
+    this.u1f(p, 'u_halation', useHalo && params.halation > 0 && this.haloA ? params.halation * 1.6 : 0);
     this.u3f(p, 'u_haloTint', [1.0, 0.32, 0.12]);
     this.u1f(p, 'u_grain', params.grain);
     this.u1f(p, 'u_grainSize', Math.max(0.5, params.grainSize * (target ? target.w / Math.max(1, this.width) : 1)));
@@ -375,16 +375,32 @@ export class GradeEngine {
    * Used to score multi-round challenges in one go.
    */
   analyzeScenario(opts: { source: SourceSpec; capture?: CaptureSpec; params: GradeParams; time?: number; width?: number; view?: Partial<ViewSpec> }): Frame | null {
-    const saved = { source: this.source, capture: this.capture, params: this.params, time: this.time, view: this.view };
-    this.source = opts.source; this.capture = opts.capture ?? {}; this.params = opts.params; this.time = opts.time ?? 0;
-    this.view = { ...this.view, ...opts.view };
-    this.srcDirty = true; this.haloDirty = true;
-    const f = this.analyze({ width: opts.width ?? 320 });
-    this.source = saved.source; this.capture = saved.capture; this.params = saved.params; this.time = saved.time; this.view = saved.view;
-    this.srcDirty = true; this.haloDirty = true;
-    this.render();
-    return f;
+    if (this.contextLost || this.width < 2 || this.height < 2) return null;
+    const gl = this.gl;
+    const w = Math.min(opts.width ?? 320, this.width);
+    const h = Math.max(1, Math.round((w * this.height) / this.width));
+    // Render the scenario's source into its own small target so the on-screen image is untouched.
+    const sw = Math.min(this.width, Math.round(w * 2)), sh = Math.max(1, Math.round((sw * this.height) / this.width));
+    this.scenarioSrc = this.target(this.scenarioSrc, sw, sh, this.floatTargets);
+    const saved = { source: this.source, capture: this.capture, time: this.time };
+    this.source = opts.source; this.capture = opts.capture ?? {}; this.time = opts.time ?? 0;
+    this.renderSource(this.scenarioSrc);
+    this.source = saved.source; this.capture = saved.capture; this.time = saved.time;
+    // Halation needs the blurred highlights of *this* source; reuse the main halo only when it is the same shot.
+    const sameShot = JSON.stringify(opts.source) === JSON.stringify(saved.source) && JSON.stringify(opts.capture ?? {}) === JSON.stringify(saved.capture);
+    if (sameShot) this.prepare();
+    this.analysis = this.target(this.analysis, w, h, false);
+    this.renderGrade(this.analysis, opts.params, { ...this.view, ...opts.view, mode: 'graded', clipWarn: false, showLost: false }, this.scenarioSrc, sameShot);
+    const raw = new Uint8Array(w * h * 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.analysis.fbo);
+    gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, raw);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    const out = new Uint8Array(w * h * 4);
+    const row = w * 4;
+    for (let y = 0; y < h; y++) out.set(raw.subarray((h - 1 - y) * row, (h - y) * row), y * row);
+    return { data: out, width: w, height: h };
   }
+  private scenarioSrc: Target | null = null;
 
   /** Average scene-linear value of the captured source around (u, v) — v from the top. Used by the white-balance eyedropper. */
   sampleSource(u: number, v: number, radius = 3): Vec3 | null {
@@ -443,12 +459,12 @@ export class GradeEngine {
   dispose() {
     const gl = this.gl;
     for (const p of this.programs.values()) gl.deleteProgram(p.prog);
-    for (const t of [this.src, this.haloA, this.haloB, this.analysis]) if (t) { gl.deleteFramebuffer(t.fbo); gl.deleteTexture(t.tex); }
+    for (const t of [this.src, this.haloA, this.haloB, this.analysis, this.scenarioSrc]) if (t) { gl.deleteFramebuffer(t.fbo); gl.deleteTexture(t.tex); }
     if (this.mediaTex) gl.deleteTexture(this.mediaTex);
     gl.deleteTexture(this.curveTex);
     gl.deleteVertexArray(this.vao);
     this.programs.clear();
-    this.src = this.haloA = this.haloB = this.analysis = null;
+    this.src = this.haloA = this.haloB = this.analysis = this.scenarioSrc = null;
     // The context itself is released when the canvas is garbage-collected. (Calling loseContext here would
     // break React StrictMode, which re-mounts effects on the same canvas.)
   }
