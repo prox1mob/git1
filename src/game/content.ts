@@ -91,8 +91,14 @@ export interface LevelDef {
   requires?: string[];
 }
 
-const L = (world: WorldId, n: number, title: string, summary: string, skills: SkillId[], minutes = 6, status: LevelStatus = 'soon', xp = 100, requires?: string[]): LevelDef => ({
-  id: `${world}-${n}`, world, n, title, summary, skills, minutes, xp, status, requires,
+/** Lessons that are implemented and playable. Everything else is clearly labelled "In development". */
+export const READY = new Set<string>([
+  'w1-2', 'w2-5',
+  'w3-1', 'w3-2', 'w3-3', 'w3-4', 'w3-5', 'w3-6', 'w3-7', 'w3-8', 'w3-9', 'w3-10',
+]);
+
+const L = (world: WorldId, n: number, title: string, summary: string, skills: SkillId[], minutes = 6, _status: LevelStatus = 'soon', xp = 100, requires?: string[]): LevelDef => ({
+  id: `${world}-${n}`, world, n, title, summary, skills, minutes, xp, status: READY.has(`${world}-${n}`) ? 'ready' : 'soon', requires,
 });
 
 export const LEVELS: LevelDef[] = [
