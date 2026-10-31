@@ -15,7 +15,7 @@ export interface StandParams {
   Lk: number; // leg length
   n: [number, number, number]; // notch distances from hinge along the base
 }
-const INIT: StandParams = { D: 70, Ls: 110, s: 70, Lk: 60, n: [40, 55, 70] };
+export const STAND_INIT: StandParams = { D: 70, Ls: 110, s: 70, Lk: 60, n: [40, 55, 70] };
 const PHONE = { h: 160, t: 8, mass: 180, com: 80 };
 const LIN = 0.223; // g per mm of 60 × 3 mm PLA plate
 
@@ -56,7 +56,7 @@ export function standRubric(p: StandParams) {
   return { rows, angles };
 }
 
-function Stand({ p, theta, legN }: { p: StandParams; theta: number; legN: number }) {
+export function Stand({ p, theta, legN }: { p: StandParams; theta: number; legN: number }) {
   const cur = useRef(theta);
   const back = useRef<THREE.Group>(null);
   const leg = useRef<THREE.Group>(null);
@@ -122,7 +122,7 @@ const steps: LessonStep[] = [
 ];
 
 export default function L8MotionChallenge() {
-  const [p, setP] = useState<StandParams>(INIT);
+  const [p, setP] = useState<StandParams>(STAND_INIT);
   const [pose, setPose] = useState<'fold' | '0' | '1' | '2'>('1');
   const { rows, angles } = standRubric(p);
   const idx = pose === 'fold' ? -1 : parseInt(pose, 10);
@@ -148,7 +148,7 @@ export default function L8MotionChallenge() {
       id="w5-l8"
       steps={steps}
       evaluate={evaluate}
-      onRetry={() => setP(INIT)}
+      onRetry={() => setP(STAND_INIT)}
       hints={[{ en: 'Moving a notch further from the hinge lowers the angle. A longer leg raises all angles. Try s = 75, leg = 60 and notches near 35, 50 and 62 mm, then check stability.', ta: 'குழியை கீலிலிருந்து தொலைவாக்கினால் கோணம் குறையும்.' }]}
       viewport={
         <Stage3D fit={150} camera={[-30, 120, 380]} target={[-40, 70, 0]} env showViews={false}>
