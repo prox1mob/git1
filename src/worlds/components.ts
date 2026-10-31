@@ -38,4 +38,10 @@ export const LEVEL_COMPONENTS: Record<string, LazyExoticComponent<ComponentType>
   'w5-l6': lazy(() => import('./w5/L6Linkage')),
   'w5-l7': lazy(() => import('./w5/L7Assembly')),
   'w5-l8': lazy(() => import('./w5/L8MotionChallenge')),
+  'w7-l1': lazy(() => import('./w7/L1Methods')),
+  'w7-l2': lazy(() => import('./w7/L2PrintBasics')),
+  'w7-l3': lazy(() => import('./w7/L3Tolerances')),
+  'w7-l4': lazy(() => import('./w7/L4DFM')),
+  'w7-l5': lazy(() => import('./w7/L5Slicing')),
+  'w7-l6': lazy(() => import('./w7/L6Prototype')),
 };
