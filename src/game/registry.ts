@@ -6,7 +6,14 @@ type LevelComponent = LazyExoticComponent<ComponentType<LevelProps>>;
 
 /** Level id → lazily loaded lesson. Only levels with status 'ready' in content.ts are routed here. */
 export const LEVEL_COMPONENTS: Record<string, LevelComponent> = {
+  'w1-1': lazy(() => import('../worlds/w1/ColourDetective')),
   'w1-2': lazy(() => import('../worlds/w1/ColourMixer')),
+  'w1-3': lazy(() => import('../worlds/w1/Harmony')),
+  'w1-4': lazy(() => import('../worlds/w1/Psychology')),
+  'w1-5': lazy(() => import('../worlds/w1/Contrast')),
+  'w1-6': lazy(() => import('../worlds/w1/Simultaneous')),
+  'w1-7': lazy(() => import('../worlds/w1/PaletteArchitect')),
+  'w1-8': lazy(() => import('../worlds/w1/MasterOfColour')),
   'w2-5': lazy(() => import('../worlds/w2/HierarchyPuzzle')),
   'w3-1': lazy(() => import('../worlds/w3/Exposure')),
   'w3-2': lazy(() => import('../worlds/w3/GammaLab')),
