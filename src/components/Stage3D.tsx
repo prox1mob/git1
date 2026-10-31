@@ -1,7 +1,8 @@
 import { Canvas, useThree } from '@react-three/fiber';
-import { Environment, Grid, Html, Lightformer, Line, OrbitControls, OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
+import { Environment, Grid, Lightformer, Line, OrbitControls, OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
 import { Suspense, useEffect, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
+import { SafeHtml } from './three/SafeHtml';
 import type { Vec3 } from '../lib/types';
 
 export type ViewName = 'persp' | 'front' | 'top' | 'side' | 'iso';
@@ -91,9 +92,9 @@ export function AxesGizmo({ length = 60, labels = true, negative = true }: { len
               <meshBasicMaterial color={a.color} />
             </mesh>
             {labels && (
-              <Html position={[end[0] * 1.12, end[1] * 1.12, end[2] * 1.12]} center zIndexRange={[4, 0]}>
+              <SafeHtml position={[end[0] * 1.12, end[1] * 1.12, end[2] * 1.12]} center zIndexRange={[4, 0]}>
                 <div style={{ color: a.color, fontWeight: 900, fontSize: 18, textShadow: '0 0 4px #000', pointerEvents: 'none' }}>{a.label}</div>
-              </Html>
+              </SafeHtml>
             )}
           </group>
         );
@@ -207,9 +208,9 @@ export function Stage3D({
           />
         )}
         {shadows && (
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -fit * 0.002, 0]} receiveShadow renderOrder={-1}>
             <planeGeometry args={[fit * 20, fit * 20]} />
-            <shadowMaterial transparent opacity={0.28} />
+            <shadowMaterial transparent opacity={0.28} depthWrite={false} />
           </mesh>
         )}
         {axes && <AxesGizmo length={typeof axes === 'number' ? axes : fit * 0.6} />}

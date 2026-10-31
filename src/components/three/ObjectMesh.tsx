@@ -1,6 +1,7 @@
-import { Edges, Html, Line } from '@react-three/drei';
+import { Edges, Line } from '@react-three/drei';
 import { forwardRef, useMemo } from 'react';
 import * as THREE from 'three';
+import { SafeHtml } from './SafeHtml';
 import { getGeometry, type MaterialSpec, type SceneObject } from '../../lib/shapes';
 import { materialById, proceduralTexture } from '../../lib/materials';
 import type { Vec3 } from '../../lib/types';
@@ -130,11 +131,11 @@ export function DimensionLines({ box, color = '#e8eef4', unit = 'mm', offset = 6
           {it.ext.map((e, j) => (
             <Line key={j} points={e} color={color} lineWidth={0.8} transparent opacity={0.6} />
           ))}
-          <Html position={[(it.a[0] + it.b[0]) / 2, (it.a[1] + it.b[1]) / 2, (it.a[2] + it.b[2]) / 2]} center zIndexRange={[3, 0]}>
+          <SafeHtml position={[(it.a[0] + it.b[0]) / 2, (it.a[1] + it.b[1]) / 2, (it.a[2] + it.b[2]) / 2]} center zIndexRange={[3, 0]}>
             <div className="hud mono" style={{ padding: '1px 6px', fontSize: 12, color: it.c, whiteSpace: 'nowrap', pointerEvents: 'none' }}>
               {it.label}
             </div>
-          </Html>
+          </SafeHtml>
         </group>
       ))}
     </group>
@@ -143,11 +144,11 @@ export function DimensionLines({ box, color = '#e8eef4', unit = 'mm', offset = 6
 
 export function Label({ position, children, color = '#e8eef4', size = 12 }: { position: Vec3; children: React.ReactNode; color?: string; size?: number }) {
   return (
-    <Html position={position} center zIndexRange={[3, 0]}>
+    <SafeHtml position={position} center zIndexRange={[3, 0]}>
       <div className="hud" style={{ padding: '1px 6px', fontSize: size, color, whiteSpace: 'nowrap', pointerEvents: 'none' }}>
         {children}
       </div>
-    </Html>
+    </SafeHtml>
   );
 }
 
