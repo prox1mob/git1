@@ -18,6 +18,8 @@ npm test           # unit tests for the maths engines
 npm run typecheck
 ```
 
+**Android:** a signed, offline APK is in [`android/release/`](android/release/); rebuild it with `android/build-apk.sh` (see [`android/README.md`](android/README.md)).
+
 Built with React, TypeScript, SVG, Canvas and Three.js. No server is needed. Progress, stars, settings and screen calibration are saved in the browser's local storage.
 
 ## What's inside
