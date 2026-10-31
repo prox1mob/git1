@@ -370,6 +370,22 @@ export class GradeEngine {
     return { data: out, width: w, height: h };
   }
 
+  /**
+   * Analyse a different source/capture/params without disturbing what is on screen.
+   * Used to score multi-round challenges in one go.
+   */
+  analyzeScenario(opts: { source: SourceSpec; capture?: CaptureSpec; params: GradeParams; time?: number; width?: number; view?: Partial<ViewSpec> }): Frame | null {
+    const saved = { source: this.source, capture: this.capture, params: this.params, time: this.time, view: this.view };
+    this.source = opts.source; this.capture = opts.capture ?? {}; this.params = opts.params; this.time = opts.time ?? 0;
+    this.view = { ...this.view, ...opts.view };
+    this.srcDirty = true; this.haloDirty = true;
+    const f = this.analyze({ width: opts.width ?? 320 });
+    this.source = saved.source; this.capture = saved.capture; this.params = saved.params; this.time = saved.time; this.view = saved.view;
+    this.srcDirty = true; this.haloDirty = true;
+    this.render();
+    return f;
+  }
+
   /** Average scene-linear value of the captured source around (u, v) — v from the top. Used by the white-balance eyedropper. */
   sampleSource(u: number, v: number, radius = 3): Vec3 | null {
     if (!this.prepare() || !this.src) return null;

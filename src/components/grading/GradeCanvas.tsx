@@ -86,6 +86,7 @@ export function GradeCanvas({
     if (!canvas.current) return;
     try {
       engine.current = new GradeEngine(canvas.current);
+      keys.current = { source: '', capture: '' };
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       return;
@@ -110,6 +111,7 @@ export function GradeCanvas({
       if (analysisTimer.current) clearTimeout(analysisTimer.current);
       engine.current?.dispose();
       engine.current = null;
+      keys.current = { source: '', capture: '' };
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aspect]);

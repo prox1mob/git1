@@ -1,4 +1,4 @@
-import { castMatrix, IDENTITY3, whiteBalanceMatrix, type Mat3, type Vec3 } from '../lib/color';
+import { castMatrix, IDENTITY3, solveWhiteBalance, whiteBalanceMatrix, type Mat3, type Vec3 } from '../lib/color';
 
 /** A colour wheel's state: puck position in the unit disc plus a master (luminance) ring value. */
 export interface Wheel { x: number; y: number; m: number }
@@ -163,3 +163,6 @@ export const colorActive = (p: GradeParams) => p.saturation !== 1 || p.vibrance 
 
 /** Deep-ish clone so lessons can store snapshots of params safely. */
 export const cloneParams = (p: GradeParams): GradeParams => JSON.parse(JSON.stringify(p));
+
+/** White-balance eyedropper: the temperature/tint that makes a sampled scene-linear colour neutral. */
+export const solveWbFromSample = (s: Vec3) => solveWhiteBalance(s);

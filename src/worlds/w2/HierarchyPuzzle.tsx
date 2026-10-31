@@ -156,7 +156,7 @@ function Editor({ initial, showOrderDefault, children, onLayout }: { initial: La
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div>
-        <div ref={ref} className="rounded-2xl bg-ink-800 p-4 pl-12 ring-1 ring-ink-750 sm:p-8 sm:pl-14">
+        <div ref={ref} className="flex justify-center rounded-2xl bg-ink-800 p-4 pl-12 ring-1 ring-ink-750 sm:p-8 sm:pl-14">
           {w > 0 && <Page layout={layout} selected={sel} onSelect={setSel} showOrder={showOrder} width={Math.min(560, w - (w < 500 ? 56 : 112))} />}
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-4">

@@ -93,6 +93,8 @@ vec3 scene(vec2 p, float t) {
 `;
 
 export const PORTRAIT = /* glsl */ `
+const float PORTRAIT_SCALE = 0.8;
+const float PORTRAIT_SHIFT = 0.03;
 vec3 skinAlbedo(int i) {
   if (i == 0) return s2l(vec3(0.953, 0.843, 0.776));
   if (i == 1) return s2l(vec3(0.910, 0.749, 0.627));
@@ -121,7 +123,7 @@ Light lighting(int preset) {
   } else if (preset == 3) { // cool window daylight
     l.key = vec3(0.86, 0.93, 1.05) * 1.55; l.fill = vec3(1.0, 0.85, 0.7) * 0.18; l.rim = vec3(0.9, 0.95, 1.0) * 0.35; l.amb = vec3(0.05, 0.055, 0.06);
   } else { // studio
-    l.key = vec3(1.0, 0.95, 0.88) * 1.6; l.fill = vec3(0.7, 0.75, 0.85) * 0.22; l.rim = vec3(1.0) * 0.7; l.amb = vec3(0.04);
+    l.key = vec3(1.0, 0.965, 0.925) * 1.55; l.fill = vec3(0.7, 0.75, 0.85) * 0.24; l.rim = vec3(1.0) * 0.7; l.amb = vec3(0.045);
   }
   return l;
 }
@@ -180,6 +182,8 @@ vec3 shadeSkin(vec3 alb, vec3 n, Light L, float occl) {
   return c;
 }
 vec3 scene(vec2 p, float t) {
+  // Frame the sitter a little closer: geometry below is authored at this inner scale.
+  p = p * PORTRAIT_SCALE + vec2(0.0, PORTRAIT_SHIFT);
   int skin = int(u_variant + 0.5);
   int preset = int(u_sp.x + 0.5);
   int ward = int(u_sp.y + 0.5);
@@ -195,7 +199,7 @@ vec3 scene(vec2 p, float t) {
 
   // hair behind the head and over the shoulders
   float hairBack = smin(sdEllipse(q - vec2(0.0, 0.03), vec2(0.128, 0.16)), sdRoundBox(q - vec2(0.0, -0.13), vec2(0.15, 0.13), 0.06), 0.05);
-  hairBack = max(hairBack, -(q.y + 0.27));
+  hairBack = max(hairBack, -(q.y + 0.29));
   float hb = cover(hairBack, PX);
   if (hb > 0.0) {
     float strands = fbm(vec2(q.x * 70.0 + sin(q.y * 20.0) * 2.0, q.y * 4.0));
@@ -207,20 +211,20 @@ vec3 scene(vec2 p, float t) {
   }
 
   // torso and garment
-  vec2 tq = p - vec2(0.0, -0.53);
-  float torso = sdEllipse(tq, vec2(0.33, 0.33));
+  vec2 tq = p - vec2(0.0, -0.41);
+  float torso = smin(sdEllipse(tq, vec2(0.4, 0.27)), sdRoundBox(tq - vec2(0.0, -0.2), vec2(0.4, 0.2), 0.1), 0.08);
   float tc = cover(torso, PX);
   if (tc > 0.0) {
     vec3 g = wardrobe(ward);
-    float nx = clamp(tq.x / 0.33, -1.0, 1.0);
+    float nx = clamp(tq.x / 0.4, -1.0, 1.0);
     vec3 n = normalize(vec3(nx, 0.35, sqrt(max(1.0 - nx * nx, 0.0)) + 0.2));
     float folds = 0.8 + 0.35 * fbm(vec2(p.x * 9.0, p.y * 3.0 + p.x * 2.0));
     float kd = max((dot(n, L.keyDir) + 0.25) / 1.25, 0.0);
     vec3 gc = g * folds * (L.key * kd + L.fill * 0.6 + L.amb);
     gc += L.rim * pow(1.0 - n.z, 4.0) * 0.12;
     // V neckline reveals skin
-    float v = abs(p.x) - (p.y + 0.29) * 0.55;
-    float neckSkin = cover(max(v, -(p.y + 0.29)), PX * 1.5);
+    float v = abs(p.x) - (p.y + 0.27) * 0.5;
+    float neckSkin = cover(max(v, -(p.y + 0.27)), PX * 1.5);
     vec3 chest = shadeSkin(alb, normalize(vec3(p.x * 3.0, 0.2, 1.0)), L, 0.75 + 0.25 * smoothstep(-0.12, -0.28, p.y));
     gc = mix(gc, chest, neckSkin);
     c = mix(c, gc, tc);
@@ -228,13 +232,13 @@ vec3 scene(vec2 p, float t) {
   }
 
   // neck
-  vec2 nq = p - vec2(H.x * 0.5, -0.065);
-  float neck = sdRoundBox(nq, vec2(0.043, 0.09), 0.02);
+  vec2 nq = p - vec2(H.x * 0.5, -0.075);
+  float neck = sdRoundBox(nq, vec2(0.044, 0.1), 0.02);
   float nc = cover(neck, PX);
   if (nc > 0.0) {
     float nx = clamp(nq.x / 0.045, -1.0, 1.0);
     vec3 n = normalize(vec3(nx, -0.1, sqrt(max(1.0 - nx * nx, 0.0))));
-    float chin = smoothstep(0.035, -0.02, nq.y + 0.0) * 0.55 + 0.45;
+    float chin = smoothstep(0.06, 0.0, nq.y) * 0.55 + 0.45;
     vec3 nk = shadeSkin(alb, n, L, chin * 0.85);
     c = mix(c, nk, nc);
     mask = max(mask, nc);
@@ -254,7 +258,7 @@ vec3 scene(vec2 p, float t) {
     // eye sockets and under-nose occlusion
     occl *= 1.0 - 0.18 * exp(-pow(length((q - vec2(-0.038, 0.012)) * vec2(1.0, 1.6)) / 0.026, 2.0));
     occl *= 1.0 - 0.18 * exp(-pow(length((q - vec2(0.038, 0.012)) * vec2(1.0, 1.6)) / 0.026, 2.0));
-    occl *= 1.0 - 0.35 * exp(-pow(length((q - vec2(0.006, -0.05)) * vec2(1.0, 2.5)) / 0.018, 2.0));
+    occl *= 1.0 - 0.14 * exp(-pow(length((q - vec2(0.008, -0.05)) * vec2(1.0, 2.5)) / 0.016, 2.0));
     vec3 face = shadeSkin(alb, n, L, occl);
     // cheeks: slightly more blood
     float blush = exp(-pow(length(q - vec2(-0.052, -0.03)) / 0.03, 2.0)) + exp(-pow(length(q - vec2(0.052, -0.03)) / 0.03, 2.0));
@@ -277,7 +281,7 @@ vec3 scene(vec2 p, float t) {
       face = mix(face, hairC * (L.key * 0.25 + 0.05), bc * 0.85);
     }
     // nostrils
-    face *= 1.0 - 0.35 * (exp(-pow(length(q - vec2(-0.011, -0.052)) / 0.006, 2.0)) + exp(-pow(length(q - vec2(0.011, -0.052)) / 0.006, 2.0)));
+    face *= 1.0 - 0.22 * (exp(-pow(length((q - vec2(-0.01, -0.053)) * vec2(1.0, 1.8)) / 0.0045, 2.0)) + exp(-pow(length((q - vec2(0.01, -0.053)) * vec2(1.0, 1.8)) / 0.0045, 2.0)));
     c = mix(c, face, hcov);
     mask = max(mask, hcov);
   }
@@ -291,8 +295,8 @@ vec3 scene(vec2 p, float t) {
     vec3 hn = normalize(vec3(q.x * 7.0, (q.y - 0.05) * 6.0, 1.0));
     float kd = max(dot(hn, L.keyDir), 0.0);
     vec3 hc = hairC * (0.55 + 0.7 * strands) * (L.key * kd * 0.9 + L.amb * 4.0 + L.fill * 0.4);
-    float sheen = exp(-pow((q.y - 0.12 + q.x * 0.4) / 0.012, 2.0)) * kd;
-    hc += L.key * sheen * 0.08 * (0.5 + strands);
+    float sheen = exp(-pow((length((q - vec2(0.02, 0.0)) * vec2(1.0, 0.85)) - 0.115) / 0.014, 2.0)) * kd * smoothstep(-0.02, 0.06, -q.x + 0.04);
+    hc += L.key * hairC * sheen * 1.4 * (0.4 + strands);
     c = mix(c, hc, ht);
     mask = max(mask, ht);
   }
@@ -328,7 +332,9 @@ vec3 windows(vec2 w, float side, float t) {
   float on = step(0.45, r);
   vec3 col = r > 0.8 ? vec3(0.55, 0.75, 1.0) : vec3(1.0, 0.62, 0.3);
   float tv = r > 0.93 ? 0.6 + 0.4 * sin(t * 5.0 + r * 30.0) : 1.0;
-  return inWin * on * col * (0.25 + 0.9 * hash12(cell + 3.1)) * tv * step(0.0, (w.y + CAMH) - 3.0);
+  float mull = step(abs(f.x - 0.5), 0.015) + step(abs(f.y - 0.56), 0.015);
+  float glow = 0.6 + 0.4 * smoothstep(0.3, 0.82, f.y);
+  return inWin * on * col * (0.08 + 0.4 * hash12(cell + 3.1)) * glow * tv * (1.0 - min(mull, 1.0) * 0.85) * step(0.0, (w.y + CAMH) - 3.0);
 }
 float bHeight(float z, float side) { return 7.0 + 9.0 * hash11(floor(z / 7.0) + side * 13.0); }
 vec3 skyNight(vec3 d) {
@@ -366,8 +372,11 @@ vec3 traceUpper(vec3 o, vec3 d, float t) {
       lit += windows(w, side, t);
       if (side < 0.5) lit += neon(w, t);
       else {
-        float shop = step(6.0, h.z) * step(h.z, 10.0) * step(h.y, 0.6 - 0.0) * step(-CAMH + 0.2, h.y);
-        lit = mix(lit, vec3(1.0, 0.68, 0.38) * (0.7 + 0.3 * fbm3(w * 3.0)), shop);
+        float shop = step(6.0, h.z) * step(h.z, 10.0) * step(h.y, 0.6) * step(-CAMH + 0.25, h.y);
+        float bars = step(0.94, fract((h.z - 6.0) / 1.0)) + step(abs(h.y + 0.2), 0.03);
+        vec3 inside = vec3(1.0, 0.66, 0.36) * (0.18 + 0.32 * smoothstep(-1.4, 0.6, h.y)) * (0.75 + 0.35 * fbm3(w * vec2(2.0, 4.0)));
+        inside = mix(inside, vec3(0.02), min(bars, 1.0));
+        lit = mix(lit, inside, shop);
       }
       // distance haze
       float fog = 1.0 - exp(-th * 0.025);
@@ -429,9 +438,9 @@ vec3 scene(vec2 p, float t) {
   }
   c += glows(p, vp, t, false);
   // rain streaks
-  vec2 rp = vec2(p.x * 90.0 + p.y * 9.0, p.y * 6.0 + t * 14.0);
-  float rain = step(0.97, hash12(vec2(floor(rp.x), floor(rp.y)))) * smoothstep(0.0, 0.5, fract(rp.y));
-  c += vec3(0.25, 0.22, 0.2) * rain * 0.08;
+  vec2 rp = vec2(p.x * 320.0 + p.y * 30.0, p.y * 9.0 + t * 16.0);
+  float rain = step(0.985, hash12(vec2(floor(rp.x), floor(rp.y)))) * smoothstep(0.0, 0.6, fract(rp.y)) * smoothstep(0.3, 0.5, abs(fract(rp.x) - 0.5) * -1.0 + 0.8);
+  c += vec3(0.3, 0.27, 0.25) * rain * 0.05;
   g_mask = 0.0;
   return c;
 }
@@ -458,36 +467,35 @@ vec3 scene(vec2 p, float t) {
     float edge = cover(p.x + 0.3, PX);
     c = mix(c, b, edge * cover(p.y - 0.24, PX));
   }
-  // main building: limestone grid with deep reveals and projecting slabs
+  // main building: limestone grid with vertical fins and projecting slabs (brise-soleil)
   float bx0 = -0.3, btop = 0.36;
   if (p.x > bx0 - PX && p.y < btop + PX) {
-    vec3 alb = s2l(vec3(0.86, 0.8, 0.7)) * (0.9 + 0.14 * fbm(p * 40.0));
+    vec3 alb = s2l(vec3(0.86, 0.8, 0.7)) * (0.9 + 0.14 * fbm(p * 40.0)) * (0.92 + 0.12 * (p.y + 0.5));
     vec2 cs = vec2(0.115, 0.13);
     vec2 lp = vec2(p.x - bx0, p.y + 0.5);
     vec2 cell = floor(lp / cs);
     vec2 f = fract(lp / cs);
-    // window opening (recessed glass)
-    vec2 w0 = vec2(0.18, 0.28), w1 = vec2(0.82, 0.86);
-    float inWin = step(w0.x, f.x) * step(f.x, w1.x) * step(w0.y, f.y) * step(f.y, w1.y);
-    // sun from upper-left casts shadow inside the recess along the left and top reveals
-    float sh = step(f.x, w0.x + 0.18) + step(w1.y - 0.22, f.y);
-    vec3 glass = mix(vec3(0.05, 0.09, 0.2), vec3(0.35, 0.45, 0.62), smoothstep(0.0, 1.0, f.y)) * 0.45;
-    glass += vec3(1.0, 0.85, 0.6) * 0.06 * hash12(cell);
-    vec3 recess = glass * (sh > 0.0 ? 0.55 : 1.0);
-    vec3 wall = alb * (sun * 0.5 + skyL);
-    // slab shadow: each floor's slab throws a diagonal shadow downward
-    float slab = step(0.9, f.y);
-    float slabShadow = step(f.y, 0.9) * step(0.9 - 0.32 + f.x * 0.2, f.y);
-    wall = mix(wall, alb * skyL * 1.3, slabShadow * 0.92);
-    wall = mix(wall, alb * (sun * 0.62 + skyL), slab);
-    vec3 b = mix(wall, recess, inWin);
-    // ground floor: dark lobby and a red door
+    float slab = step(0.88, f.y);
+    float fin = step(f.x, 0.07) * (1.0 - slab);
+    float slabShadow = step(0.72, f.y) * (1.0 - slab) * (1.0 - fin);
+    float finShadow = step(0.07, f.x) * step(f.x, 0.18) * (1.0 - slab);
+    float inWin = step(0.22, f.x) * step(f.x, 0.92) * step(0.1, f.y) * step(f.y, 0.7);
+    vec3 lit = alb * (sun * 0.5 + skyL);
+    vec3 shade = alb * (skyL * 1.3 + vec3(0.04, 0.03, 0.02));
+    vec3 wall = mix(lit, shade, max(slabShadow, finShadow));
+    vec3 glass = mix(vec3(0.05, 0.09, 0.2), vec3(0.32, 0.42, 0.6), smoothstep(0.1, 0.7, f.y)) * 0.5;
+    glass += vec3(1.0, 0.85, 0.6) * 0.05 * hash12(cell);
+    float recess = max(step(f.x, 0.3), step(0.6, f.y));
+    glass *= mix(1.0, 0.6, recess);
+    vec3 b = mix(wall, glass, inWin);
+    b = mix(b, alb * (sun * 0.62 + skyL) * 1.04, slab);
+    b = mix(b, alb * (sun * 0.42 + skyL) * 0.96, fin);
+    // ground floor: dark lobby glazing and a red door
     if (p.y < -0.37) {
       b = mix(alb * skyL * 1.1, vec3(0.02, 0.022, 0.03), step(0.08, fract((p.x - bx0) / 0.23)));
       float door = step(abs(p.x - 0.16), 0.045) * step(p.y, -0.4);
       b = mix(b, s2l(vec3(0.78, 0.12, 0.08)) * (sun * 0.25 + skyL * 1.5), door);
     }
-    // the building edge catches the sun; a cooler shadow at the base of the parapet
     float edge = cover(bx0 - p.x, PX) * cover(p.y - btop, PX);
     c = mix(c, b, edge);
   }
@@ -499,7 +507,8 @@ vec3 scene(vec2 p, float t) {
   }
   // olive tree in front of the shaded building
   vec2 tq = p - vec2(-0.48, -0.22);
-  float crown = sdEllipse(tq, vec2(0.16, 0.13)) - 0.03 * (fbm(tq * 22.0) - 0.5);
+  float crown = min(min(sdEllipse(tq, vec2(0.13, 0.1)), sdEllipse(tq - vec2(-0.08, -0.04), vec2(0.09, 0.08))), sdEllipse(tq - vec2(0.08, -0.03), vec2(0.1, 0.075)));
+  crown -= 0.035 * (fbm(tq * 26.0) - 0.5);
   float trunk = sdBox(p - vec2(-0.48, -0.42), vec2(0.008, 0.12));
   float tc = cover(crown, PX * 1.5);
   vec3 leaf = s2l(vec3(0.36, 0.42, 0.22)) * (0.55 + 0.6 * fbm(tq * 30.0));
@@ -570,6 +579,7 @@ vec3 scene(vec2 p, float t) {
     float cov = cover(min(body, handle), PX);
     float nx = clamp(q.x / 0.068, -1.0, 1.0);
     vec3 n = normalize(vec3(nx, 0.0, sqrt(max(1.0 - nx * nx, 0.0))));
+    if (body > 0.0) n = normalize(vec3(0.2, 0.3, 0.9));
     vec3 alb = s2l(vec3(0.16, 0.32, 0.6));
     float kd = max(dot(n, Ld), 0.0);
     vec3 cc = alb * (key * kd + amb);
@@ -626,79 +636,94 @@ vec3 scene(vec2 p, float t) {
 
 export const SNEAKER = /* glsl */ `
 vec3 colourway(int i, out vec3 accent, out vec3 bg) {
-  if (i == 1) { accent = s2l(vec3(0.85, 0.66, 0.38)); bg = s2l(vec3(0.12, 0.12, 0.13)); return s2l(vec3(0.09, 0.09, 0.1)); }
-  if (i == 2) { accent = s2l(vec3(0.95, 0.94, 0.9)); bg = s2l(vec3(0.62, 0.72, 0.78)); return s2l(vec3(0.17, 0.34, 0.68)); }
-  if (i == 3) { accent = s2l(vec3(0.14, 0.14, 0.15)); bg = s2l(vec3(0.84, 0.36, 0.25)); return s2l(vec3(0.94, 0.92, 0.87)); }
-  accent = s2l(vec3(0.75, 0.2, 0.15)); bg = s2l(vec3(0.82, 0.78, 0.71));
-  return s2l(vec3(0.93, 0.91, 0.86));
+  if (i == 1) { accent = s2l(vec3(0.83, 0.66, 0.4)); bg = s2l(vec3(0.15, 0.15, 0.16)); return s2l(vec3(0.075, 0.075, 0.08)); }
+  if (i == 2) { accent = s2l(vec3(0.95, 0.94, 0.9)); bg = s2l(vec3(0.63, 0.71, 0.76)); return s2l(vec3(0.16, 0.31, 0.66)); }
+  if (i == 3) { accent = s2l(vec3(0.12, 0.12, 0.13)); bg = s2l(vec3(0.86, 0.38, 0.26)); return s2l(vec3(0.95, 0.93, 0.88)); }
+  accent = s2l(vec3(0.72, 0.18, 0.13)); bg = s2l(vec3(0.83, 0.79, 0.72));
+  return s2l(vec3(0.94, 0.92, 0.87));
 }
+mat2 rot(float a) { return mat2(cos(a), -sin(a), sin(a), cos(a)); }
 vec3 scene(vec2 p, float t) {
   int cw = int(u_variant + 0.5);
   vec3 accent, bg;
   vec3 upperC = colourway(cw, accent, bg);
-  vec3 key = vec3(1.0, 0.97, 0.93) * 1.5;
-  vec3 amb = vec3(0.1, 0.105, 0.115);
-  // seamless backdrop sweep with a soft floor
-  float floorY = -0.23;
-  float sweep = smoothstep(floorY - 0.05, floorY + 0.25, p.y);
-  float light = 0.55 + 0.6 * exp(-length(p - vec2(-0.4, 0.4)) * 1.2);
-  vec3 c = bg * mix(0.62, 1.0, sweep) * light;
+  vec3 key = vec3(1.0, 0.97, 0.93) * 1.45;
+  vec3 amb = vec3(0.11, 0.115, 0.125);
+  float plinthTop = -0.23;
+  // seamless backdrop sweep
+  float sweep = smoothstep(plinthTop - 0.1, plinthTop + 0.3, p.y);
+  float light = 0.5 + 0.65 * exp(-length(p - vec2(-0.45, 0.42)) * 1.25);
+  vec3 c = bg * mix(0.6, 1.0, sweep) * light;
   // plinth
-  vec2 pq = p - vec2(0.0, -0.36);
-  float plinth = sdBox(pq, vec2(0.46, 0.13));
+  vec2 pq = p - vec2(0.0, plinthTop - 0.16);
+  float plinth = sdBox(pq, vec2(0.5, 0.16));
   if (plinth < PX) {
-    vec3 alb = s2l(vec3(0.78, 0.77, 0.74)) * (0.9 + 0.1 * fbm(p * 40.0));
-    float top = smoothstep(0.115, 0.13, pq.y);
-    vec3 pc = alb * (key * mix(0.42, 0.95, top) + amb);
+    vec3 alb = s2l(vec3(0.8, 0.79, 0.76)) * (0.92 + 0.1 * fbm(p * 50.0));
+    float top = smoothstep(0.145, 0.16, pq.y);
+    float side = smoothstep(-0.5, 0.5, -pq.x) * 0.25;
+    vec3 pc = alb * (key * mix(0.38 + side, 0.95, top) + amb);
     c = mix(c, pc, cover(plinth, PX));
   }
-  // shoe, side view, toe to the left
-  float s = 0.62;
-  vec2 q = (p - vec2(0.0, -0.11)) / s;
-  float spring = 0.07 * pow(smoothstep(-0.18, -0.5, q.x), 2.0);
+  // contact shadow on the plinth top
+  float sh = exp(-pow(length((p - vec2(0.02, plinthTop + 0.004)) * vec2(1.0, 9.0)) / 0.3, 2.0));
+  c *= 1.0 - 0.55 * sh * step(p.y, plinthTop + 0.03);
+
+  float s = 0.66;
+  vec2 q = (p - vec2(0.0, plinthTop + 0.13 * s)) / s;
+  float spring = 0.06 * pow(smoothstep(-0.22, -0.5, q.x), 2.0);
   vec2 sq = q - vec2(0.0, spring);
-  float sole = sdRoundBox(sq - vec2(0.02, -0.085), vec2(0.5, 0.045), 0.04);
-  float upper = sdEllipse(sq - vec2(-0.28, 0.0), vec2(0.22, 0.085));
-  upper = smin(upper, sdRoundBox(sq - vec2(0.05, 0.04), vec2(0.3, 0.1), 0.06), 0.06);
-  upper = smin(upper, sdEllipse(sq - vec2(0.36, 0.07), vec2(0.15, 0.15)), 0.05);
-  float opening = sdEllipse(sq - vec2(0.27, 0.19), vec2(0.2, 0.065));
+  float pxs = PX / s;
+  // sole: outsole + midsole, thicker under the heel
+  float sole = sdRoundBox(sq - vec2(0.0, -0.095), vec2(0.475, 0.035), 0.03);
+  sole = smin(sole, sdRoundBox(sq - vec2(0.27, -0.075), vec2(0.2, 0.05), 0.035), 0.04);
+  // upper: toe box, vamp rising to the ankle, quarter and heel
+  float toe = sdEllipse(sq - vec2(-0.3, -0.035), vec2(0.19, 0.075));
+  float vamp = sdRoundBox(rot(0.22) * (sq - vec2(-0.04, 0.005)), vec2(0.22, 0.07), 0.06);
+  float quarter = sdRoundBox(sq - vec2(0.27, 0.05), vec2(0.195, 0.13), 0.085);
+  float upper = smin(smin(toe, vamp, 0.07), quarter, 0.07);
+  float opening = sdEllipse(sq - vec2(0.235, 0.205), vec2(0.165, 0.05));
   upper = max(upper, -opening);
-  upper = max(upper, sq.y - 0.21);
-  float shadow = exp(-pow(length((p - vec2(0.02, -0.235)) * vec2(1.0, 7.0)) / 0.3, 2.0));
-  c *= 1.0 - 0.6 * shadow;
-  float uc = cover(upper, PX / s);
+  upper = max(upper, -(sq.y + 0.075));
+  float uc = cover(upper, pxs);
   if (uc > 0.0) {
-    float ny = clamp((sq.y + 0.04) / 0.22, 0.0, 1.0);
-    float shade = 0.5 + 0.55 * ny;
+    float ny = clamp((sq.y + 0.07) / 0.26, 0.0, 1.0);
+    float shade = 0.42 + 0.6 * ny;
     vec3 u = upperC * (key * shade + amb);
-    // toe overlay and heel counter in accent
-    float mud = step(sq.y, -0.015 + 0.06 * smoothstep(-0.05, -0.45, sq.x)) * step(sq.x, -0.02);
-    float heel = step(0.3, sq.x + sq.y * 0.4) * step(sq.y, 0.12);
-    float wave = abs(sq.y - (0.02 + 0.09 * smoothstep(-0.25, 0.3, sq.x) + 0.02 * sin(sq.x * 9.0))) - 0.018;
-    float waveM = cover(wave, 0.004) * step(-0.25, sq.x) * step(sq.x, 0.28);
-    u = mix(u, accent * (key * shade + amb), max(max(mud, heel), waveM));
-    // stitching along the overlay edge
-    float stitch = cover(abs(sq.y - (-0.015 + 0.06 * smoothstep(-0.05, -0.45, sq.x)) - 0.012) - 0.0025, 0.002) * step(0.5, fract(sq.x * 60.0)) * step(sq.x, -0.03);
-    u = mix(u, u * 0.55, stitch);
-    // laces
-    for (int i = 0; i < 6; i++) {
-      vec2 lp = vec2(-0.16 + float(i) * 0.055, 0.075 + float(i) * 0.02);
-      float lace = sdRoundBox(sq - lp, vec2(0.022, 0.007), 0.006);
-      u = mix(u, s2l(vec3(0.95)) * (key * 0.9 + amb), cover(lace, 0.003));
+    // toe overlay (mudguard), heel counter and a side panel in the accent colour
+    float mudLine = -0.02 + 0.07 * smoothstep(-0.05, -0.45, sq.x);
+    float mud = step(sq.y, mudLine) * step(sq.x, -0.06);
+    float heel = step(0.33, sq.x - (sq.y + 0.07) * 0.25);
+    float wave = abs(sq.y - (0.0 + 0.11 * smoothstep(-0.2, 0.32, sq.x))) - 0.02;
+    float waveM = cover(wave, 0.004) * step(-0.18, sq.x) * step(sq.x, 0.31);
+    vec3 acc = accent * (key * shade + amb);
+    u = mix(u, acc, max(max(mud, heel), waveM));
+    // stitching
+    float st = cover(abs(sq.y - mudLine - 0.013) - 0.0022, 0.002) * step(0.5, fract(sq.x * 70.0)) * step(sq.x, -0.08);
+    u = mix(u, u * 0.55, st);
+    // padded collar around the opening
+    float collar = cover(abs(opening) - 0.012, 0.004) * step(0.1, sq.y);
+    u = mix(u, acc * 0.85, collar);
+    // laces along the top of the vamp
+    for (int i = 0; i < 5; i++) {
+      vec2 lp = vec2(-0.2 + float(i) * 0.065, 0.045 + float(i) * 0.016);
+      float lace = sdRoundBox(rot(-0.5) * (sq - lp), vec2(0.024, 0.008), 0.007);
+      u = mix(u, s2l(vec3(0.97)) * (key * 0.95 + amb), cover(lace, 0.003));
+      float eye = length(sq - lp - vec2(0.0, -0.022)) - 0.006;
+      u = mix(u, u * 0.4, cover(eye, 0.002));
     }
-    // edge light and soft occlusion where upper meets sole
-    u += key * 0.18 * exp(-max(-upper, 0.0) * 90.0) * smoothstep(0.0, 0.1, sq.y);
-    u *= 1.0 - 0.35 * exp(-(sq.y + 0.04) * 30.0);
+    // edge light and occlusion near the sole
+    u += key * 0.12 * exp(-max(-upper, 0.0) * 120.0) * smoothstep(0.02, 0.12, sq.y);
+    u *= 1.0 - 0.3 * exp(-(sq.y + 0.075) * 40.0);
     c = mix(c, u, uc);
   }
-  float sc = cover(sole, PX / s);
+  float sc = cover(sole, pxs);
   if (sc > 0.0) {
-    float ny = clamp((sq.y + 0.13) / 0.09, 0.0, 1.0);
-    vec3 sole = s2l(vec3(0.94, 0.93, 0.9)) * (key * (0.45 + 0.5 * ny) + amb);
-    float out_ = step(sq.y, -0.112 + spring * 0.0);
-    sole = mix(sole, s2l(vec3(0.55, 0.38, 0.24)) * (key * 0.4 + amb), out_);
-    sole *= 1.0 - 0.25 * cover(abs(sq.y + 0.07) - 0.002, 0.002);
-    c = mix(c, sole, sc);
+    float ny = clamp((sq.y + 0.13) / 0.1, 0.0, 1.0);
+    vec3 sl = s2l(vec3(0.95, 0.94, 0.91)) * (key * (0.42 + 0.55 * ny) + amb);
+    float outsole = step(sq.y, -0.112);
+    sl = mix(sl, s2l(vec3(0.5, 0.34, 0.22)) * (key * 0.45 + amb), outsole);
+    sl *= 1.0 - 0.3 * cover(abs(sq.y + 0.075) - 0.0018, 0.002) * step(sq.x, 0.1);
+    c = mix(c, sl, sc);
   }
   g_mask = max(uc, sc);
   return c;

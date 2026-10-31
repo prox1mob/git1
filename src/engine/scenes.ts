@@ -64,6 +64,10 @@ export function chartPatchRects(aspect: number, frame?: [number, number, number]
   return out;
 }
 
+/** The portrait shader frames its sitter at 0.8× with a small vertical shift; convert authored points to frame coordinates. */
+const PS = 0.8, PSHIFT = 0.03;
+const portraitRect = (x: number, y: number, r: number): [number, number, number, number] => scenePointRect(x / PS, (y - PSHIFT) / PS, r / PS);
+
 /** Named sample regions (scene coordinates) used by lesson evaluators. */
 export const REGIONS = {
   stilllife: {
@@ -77,14 +81,14 @@ export const REGIONS = {
     table: scenePointRect(0.0, -0.4, 0.05),
   },
   portrait: {
-    forehead: scenePointRect(0.0, 0.15, 0.008),
-    cheekL: scenePointRect(-0.05, 0.075, 0.012),
-    cheekR: scenePointRect(0.05, 0.075, 0.01),
-    neck: scenePointRect(-0.015, -0.06, 0.012),
-    backdrop: scenePointRect(-0.5, 0.3, 0.06),
-    backdropR: scenePointRect(0.5, 0.25, 0.06),
-    garment: scenePointRect(-0.18, -0.36, 0.04),
-    hair: scenePointRect(-0.06, 0.205, 0.01),
+    forehead: portraitRect(0.0, 0.15, 0.008),
+    cheekL: portraitRect(-0.05, 0.075, 0.012),
+    cheekR: portraitRect(0.05, 0.075, 0.01),
+    neck: portraitRect(-0.012, -0.06, 0.01),
+    backdrop: portraitRect(-0.5, 0.3, 0.06),
+    backdropR: portraitRect(0.5, 0.25, 0.06),
+    garment: portraitRect(-0.22, -0.3, 0.035),
+    hair: portraitRect(-0.06, 0.205, 0.01),
   },
   coast: {
     skyHigh: scenePointRect(0.0, 0.4, 0.05),
