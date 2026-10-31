@@ -9,6 +9,15 @@ npm run build      # static site in dist/ (relative paths, works from any host)
 npm test           # colour-science unit tests
 ```
 
+## Android app (APK)
+
+The app is wrapped for Android with [Capacitor](https://capacitorjs.com) (`capacitor.config.ts`, `android/`). It runs fully offline — fonts, scenes and the grading engine are bundled — and needs Android 7.0+ with a WebGL2-capable System WebView (any up-to-date device).
+
+- **Easiest:** every push runs the **Android APK** GitHub Actions workflow (`.github/workflows/android-apk.yml`). Open the run under the repository’s *Actions* tab and download `the-visual-lab-apk` from *Artifacts*. Unzip it and install `the-visual-lab-debug.apk` on your device (allow “install unknown apps” for your browser or file manager).
+- **Locally:** with the Android SDK installed (e.g. via Android Studio) and JDK 21, run `npm run android:apk`; the APK lands in `android/app/build/outputs/apk/debug/`. `npm run android:open` opens the project in Android Studio.
+
+The APK is a *debug* build, signed with a development key: ideal for sideloading and testing. Publishing on Google Play needs a release build signed with your own key.
+
 Requires a browser with WebGL2 for the grading worlds (any recent Chrome, Edge, Firefox or Safari, including Android tablets). The Colour and Typography worlds work without it.
 
 ## What is in the game

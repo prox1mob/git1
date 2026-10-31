@@ -66,7 +66,7 @@ function TopBar({ active }: { active: string }) {
   }, [active]);
   const links: [string, string][] = [['', 'Worlds'], ['daily', 'Daily'], ['sandbox', 'Sandbox'], ['gallery', 'Gallery'], ['notes', 'Lab notes']];
   return (
-    <header className="sticky top-0 z-40 border-b border-ink-800 bg-ink-900/85 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-ink-800 bg-ink-900/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-3 px-4 sm:px-6">
         <a href={href('')} className="flex items-center gap-2.5 pr-2" aria-label="The Visual Lab — home">
           <span aria-hidden className="relative inline-block h-6 w-8">
