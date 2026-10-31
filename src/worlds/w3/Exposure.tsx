@@ -87,16 +87,16 @@ const rounds: GradingRound[] = [
     evaluate: (f) => {
       const t = toneStats(f);
       const clip = errorToScore(Math.max(t.clipHi, t.clipLo) * 100, 0.5, 8);
-      const range = Math.round((rangeScore(t.p02, 0, 0.1, 0.2) + rangeScore(t.p98, 0.85, 0.99, 0.35)) / 2);
-      const mid = rangeScore(t.median, 0.38, 0.62, 0.3);
+      const range = Math.round((rangeScore(t.p02, 0, 0.1, 0.1) + rangeScore(t.p98, 0.85, 0.99, 0.2)) / 2);
+      const mid = rangeScore(t.median, 0.38, 0.62, 0.15);
       const worked: string[] = [], improve: string[] = [];
       if (clip === 100) worked.push('No meaningful clipping at either end.'); else improve.push(`Clipping: ${pct(t.clipHi)} highlights, ${pct(t.clipLo)} shadows. Pull back exposure, whites or blacks.`);
       if (range >= 85) worked.push('The image now uses the full range from near-black to near-white.'); else improve.push(`Tonal range runs from ${pct(t.p02, 0)} to ${pct(t.p98, 0)}. Aim for under 10% and over 85% — add contrast or adjust whites/blacks.`);
       if (mid < 85) improve.push(`Midtones sit at ${pct(t.median, 0)}; aim for 38–62% for a balanced exposure.`);
       return {
         criteria: [
-          { label: 'No clipping', score: clip, weight: 2, detail: `${pct(t.clipHi)} highlights, ${pct(t.clipLo)} shadows clipped.` },
-          { label: 'Full tonal range', score: range, weight: 2, detail: `Darkest 2% at ${pct(t.p02, 0)}, brightest 2% at ${pct(t.p98, 0)}.` },
+          { label: 'No clipping', score: clip, weight: 1, detail: `${pct(t.clipHi)} highlights, ${pct(t.clipLo)} shadows clipped.` },
+          { label: 'Full tonal range', score: range, weight: 3, detail: `Darkest 2% at ${pct(t.p02, 0)}, brightest 2% at ${pct(t.p98, 0)}.` },
           { label: 'Balanced midtones', score: mid, weight: 1, detail: `Median luminance ${pct(t.median, 0)}.` },
         ],
         worked,
@@ -128,14 +128,14 @@ const rounds: GradingRound[] = [
     evaluate: (f) => {
       const face = meanLch(f, REGIONS.portrait.forehead);
       const t = toneStats(f);
-      const L = rangeScore(face[0], 72, 82, 14);
+      const L = rangeScore(face[0], 72, 82, 9);
       const clip = errorToScore(t.clipHi * 100, 1, 10);
-      const key = rangeScore(t.median, 0.55, 0.85, 0.3);
+      const key = rangeScore(t.median, 0.6, 0.85, 0.15);
       return {
         criteria: [
           { label: 'Face lightness', score: L, weight: 2, detail: `Forehead L* ${face[0].toFixed(1)} (target 72–82).` },
-          { label: 'Highlight detail kept', score: clip, weight: 2, detail: `${pct(t.clipHi)} of pixels clipped.` },
-          { label: 'High-key overall', score: key, weight: 1, detail: `Median luminance ${pct(t.median, 0)} (aim 55–85%).` },
+          { label: 'Highlight detail kept', score: clip, weight: 1, detail: `${pct(t.clipHi)} of pixels clipped.` },
+          { label: 'High-key overall', score: key, weight: 1, detail: `Median luminance ${pct(t.median, 0)} (aim 60–85%).` },
         ],
         worked: [...(L >= 85 ? ['The face sits in a luminous, high-key range.'] : []), ...(clip >= 90 ? ['Skin texture survives — nothing important clipped.'] : [])],
         improve: [...(L < 85 ? [face[0] < 72 ? 'The face is still too dark for high-key — raise exposure or shadows.' : 'The face is pushing past L* 82 — highlights or exposure down a touch.'] : []), ...(clip < 90 ? ['Clipping is eating highlight detail; use Highlights or Whites to pull it back.'] : [])],

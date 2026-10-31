@@ -54,40 +54,42 @@ const rounds: GradingRound[] = [
     id: 'portrait', label: 'Portrait', source: portrait, capture: { castTemp: 4600 }, aspect: 3 / 2, panels: ['wb', 'wheels', 'hsl'], scopes: ['vectorscope'],
     brief: 'The face and the warm backdrop melt together. Separate them: increase the colour difference between skin and background, keep skin natural (within 8° of the skin line) and make the face the most saturated area.',
     hint: 'Neutralise the cast a little, then cool the backdrop with Lift or the orange/red bands’ hue toward magenta… and check the skin still sits on the line.',
-    live: (f) => { const x = separation(f, REGIONS.portrait.cheekL, REGIONS.portrait.backdrop); return <><LiveMetric label="Skin ↔ background ΔE" value={x.dE.toFixed(1)} ok={x.dE >= 20} target="≥ 20" /><LiveMetric label="Hue gap" value={`${x.hueGap.toFixed(0)}°`} ok={x.hueGap >= 60} target="≥ 60°" /></>; },
+    live: (f) => { const x = separation(f, REGIONS.portrait.cheekL, REGIONS.portrait.backdrop); return <><LiveMetric label="Skin ↔ background ΔE" value={x.dE.toFixed(1)} ok={x.dE >= 36} target="≥ 36" /><LiveMetric label="Hue gap" value={`${x.hueGap.toFixed(0)}°`} ok={x.hueGap >= 60} target="≥ 60°" /></>; },
     evaluate: (f, _p, _d, ref) => {
       const x = separation(f, REGIONS.portrait.cheekL, REGIONS.portrait.backdrop);
       const x0 = ref ? separation(ref, REGIONS.portrait.cheekL, REGIONS.portrait.backdrop) : x;
       const sk = skinReport(f);
       return {
         criteria: [
-          { label: 'Colour separation', score: rangeScore(x.dE, 20, 80, 14), weight: 2, detail: `Skin ↔ background ΔE00 ${x0.dE.toFixed(1)} → ${x.dE.toFixed(1)}.` },
+          { label: 'Colour separation', score: rangeScore(x.dE - x0.dE, 10, 80, 10), weight: 2, detail: `Skin ↔ background ΔE00 ${x0.dE.toFixed(1)} → ${x.dE.toFixed(1)} (aim +10 or more).` },
           { label: 'Hue contrast', score: rangeScore(x.hueGap, 60, 180, 50), weight: 1, detail: `Hue gap ${x.hueGap.toFixed(0)}°.` },
           { label: 'Subject leads in saturation', score: rangeScore(x.sC - x.bC, 2, 80, 10), weight: 1, detail: `Skin C* ${x.sC.toFixed(0)} vs background C* ${x.bC.toFixed(0)}.` },
           { label: 'Skin stays natural', score: errorToScore(sk.error, 8, 25), weight: 2, detail: `Skin ${sk.error.toFixed(1)}° from the skin line.` },
         ],
-        worked: x.dE >= 20 ? ['The face now reads clearly against the background.'] : [],
-        improve: [...(x.dE < 20 ? ['Push the background further away in hue — cool it, or mute it.'] : []), ...(sk.error >= 8 ? ['Watch the skin: it has drifted off the skin-tone line.'] : [])],
+        worked: x.dE - x0.dE >= 10 ? ['The face now reads clearly against the background.'] : [],
+        improve: [...(x.dE - x0.dE < 10 ? ['Push the background further away in hue — cool it, or mute it.'] : []), ...(sk.error >= 8 ? ['Watch the skin: it has drifted off the skin-tone line.'] : [])],
         meta: { skinHueError: sk.error },
       };
     },
   },
   {
-    id: 'product', label: 'Product', source: sneaker, capture: { castTemp: 9000 }, aspect: 3 / 2, panels: ['wb', 'wheels', 'hsl'], scopes: ['vectorscope'],
+    id: 'product', label: 'Product', source: sneaker, capture: { castTemp: 12500 }, aspect: 3 / 2, panels: ['wb', 'wheels', 'hsl'], scopes: ['vectorscope'],
     brief: 'The red accents on this sneaker are getting lost in a cold, bluish wash. Make the red panels pop against the backdrop while keeping the white leather believably white.',
     hint: 'Warm the white balance until the white sole looks white, then lift the red band’s saturation.',
-    evaluate: (f) => {
+    evaluate: (f, _p, _d, ref) => {
       const red: Rect4 = [-0.22, -0.172, -0.18, -0.156];
       const r = meanLch(f, red), b = meanLch(f, SNK_BG), u = meanLch(f, SNK_UPPER);
+      const r0 = ref ? meanLch(ref, red) : r;
       const gap = dE(meanLab(f, red), meanLab(f, SNK_BG));
+      const gap0 = ref ? dE(meanLab(ref, red), meanLab(ref, SNK_BG)) : gap;
       return {
         criteria: [
-          { label: 'Accent separation', score: rangeScore(gap, 30, 100, 20), weight: 2, detail: `Red panel ↔ backdrop ΔE00 ${gap.toFixed(1)}.` },
-          { label: 'Accent saturation', score: rangeScore(r[1], 35, 120, 20), weight: 1, detail: `Red panel C* ${r[1].toFixed(0)} (backdrop C* ${b[1].toFixed(0)}).` },
-          { label: 'White leather stays white', score: errorToScore(u[1], 6, 25), weight: 2, detail: `Upper chroma C* ${u[1].toFixed(1)}.` },
+          { label: 'Accent separation', score: rangeScore(gap - gap0, 6, 100, 8), weight: 2, detail: `Red panel ↔ backdrop ΔE00 ${gap0.toFixed(1)} → ${gap.toFixed(1)} (aim +6 or more).` },
+          { label: 'Accent saturation', score: rangeScore(r[1] / Math.max(1, r0[1]), 1.12, 2, 0.15), weight: 1, detail: `Red panel C* ${r0[1].toFixed(0)} → ${r[1].toFixed(0)} (backdrop C* ${b[1].toFixed(0)}).` },
+          { label: 'White leather stays white', score: errorToScore(u[1], 2.5, 15), weight: 2, detail: `Upper chroma C* ${u[1].toFixed(1)}.` },
         ],
-        worked: gap >= 30 ? ['The accent colour now owns the frame.'] : [],
-        improve: u[1] >= 6 ? ['The white leather carries a tint — fix white balance before boosting colour.'] : [],
+        worked: gap - gap0 >= 6 ? ['The accent colour now owns the frame.'] : [],
+        improve: u[1] >= 2.5 ? ['The white leather carries a tint — fix white balance before boosting colour.'] : [],
       };
     },
   },

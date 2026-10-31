@@ -11,7 +11,7 @@ import { GradingChallenge, type GradingRound, type RoundResult } from '../shared
 import type { Criterion } from '../../components/lesson/LessonShell';
 
 const raw = { kind: 'scene' as const, scene: 'portrait' as const, variant: 3, params: [3, 0, 0, 0] as [number, number, number, number] };
-const CAPTURE = { exposure: -0.55, castTemp: 5600 };
+const CAPTURE = { exposure: -0.85, castTemp: 4700 };
 const ALL: GradingRound['panels'] = ['wb', 'toneFull', 'wheels', 'curves', 'hsl', 'colour', 'film'];
 
 function technical(f: Frame): { criteria: Criterion[]; improve: string[] } {
@@ -20,8 +20,8 @@ function technical(f: Frame): { criteria: Criterion[]; improve: string[] } {
   const skin = errorToScore(sk.error, 8, 25);
   return {
     criteria: [
-      { label: 'Technical · highlights intact', score: clip, weight: 1, detail: `${(t.clipHi * 100).toFixed(1)}% clipped.` },
-      { label: 'Technical · skin believable', score: skin, weight: 1, detail: `Skin ${sk.error.toFixed(1)}° from the skin line.` },
+      { label: 'Technical · highlights intact', score: clip, weight: 0.75, detail: `${(t.clipHi * 100).toFixed(1)}% clipped.` },
+      { label: 'Technical · skin believable', score: skin, weight: 0.75, detail: `Skin ${sk.error.toFixed(1)}° from the skin line.` },
     ],
     improve: [...(clip < 85 ? ['Highlights are clipping.'] : []), ...(skin < 85 ? ['Skin has left the believable range on the vectorscope.'] : [])],
   };
@@ -42,7 +42,7 @@ const rounds: GradingRound[] = [
     const crit = [
       { label: 'Look · neutral background', score: errorToScore(bg[1], 4, 20), weight: 1, detail: `Backdrop chroma C* ${bg[1].toFixed(1)}.` },
       { label: 'Look · true skin', score: errorToScore(sk.error, 4, 15), weight: 1, detail: `${sk.error.toFixed(1)}° from the line.` },
-      { label: 'Look · face exposure', score: rangeScore(face[0], 58, 76, 12), weight: 1, detail: `Forehead L* ${face[0].toFixed(0)}.` },
+      { label: 'Look · face exposure', score: rangeScore(face[0], 58, 76, 8), weight: 1, detail: `Forehead L* ${face[0].toFixed(0)}.` },
       { label: 'Look · gentle contrast', score: rangeScore(t.std, 0.13, 0.24, 0.08), weight: 1, detail: `Luminance spread ${t.std.toFixed(3)}.` },
     ];
     return { criteria: crit, worked: crit[0].score >= 85 ? ['The white balance is clean — the grey wall is grey.'] : [], improve: crit[0].score < 85 ? ['Neutralise the backdrop first; editorial work starts from honest colour.'] : [] };
@@ -52,8 +52,8 @@ const rounds: GradingRound[] = [
     const crit = [
       { label: 'Look · darker overall', score: rangeScore(t0.median - t.median, 0.06, 0.35, 0.08), weight: 1, detail: `Median ${Math.round(t0.median * 100)}% → ${Math.round(t.median * 100)}%.` },
       { label: 'Look · cool shadows', score: rangeScore(-lo[2], 2, 25, 5), weight: 1, detail: `Shadow b* ${lo[2].toFixed(1)}.` },
-      { label: 'Look · restrained colour', score: rangeScore(fl0.C - fl.C, 0, 30, 8), weight: 1, detail: `Average chroma ${fl0.C.toFixed(1)} → ${fl.C.toFixed(1)}.` },
-      { label: 'Look · more contrast', score: rangeScore(t.std / Math.max(1e-3, t0.std), 1.0, 1.8, 0.3), weight: 1, detail: `Spread ${t0.std.toFixed(3)} → ${t.std.toFixed(3)}.` },
+      { label: 'Look · restrained colour', score: rangeScore(fl0.C - fl.C, 1.5, 30, 3), weight: 1, detail: `Average chroma ${fl0.C.toFixed(1)} → ${fl.C.toFixed(1)}.` },
+      { label: 'Look · more contrast', score: rangeScore(t.std / Math.max(1e-3, t0.std), 1.1, 1.8, 0.2), weight: 1, detail: `Spread ${t0.std.toFixed(3)} → ${t.std.toFixed(3)}.` },
     ];
     return { criteria: crit, worked: crit[1].score >= 85 ? ['Cool, deep shadows give the frame weight.'] : [], improve: crit[0].score < 85 ? ['Moody images usually sit lower — bring exposure or gamma down.'] : [] };
   }),
@@ -62,7 +62,7 @@ const rounds: GradingRound[] = [
     const crit = [
       { label: 'Look · warm shift', score: rangeScore(fl.b - fl0.b, 4, 30, 6), weight: 1, detail: `Average b* ${fl0.b.toFixed(1)} → ${fl.b.toFixed(1)}.` },
       { label: 'Look · lifted blacks', score: rangeScore(t.p02, 0.06, 0.2, 0.06), weight: 1, detail: `Darkest 2% at ${Math.round(t.p02 * 100)}%.` },
-      { label: 'Look · softer contrast', score: rangeScore(t.std / Math.max(1e-3, t0.std), 0.6, 0.98, 0.25), weight: 1, detail: `Spread ${t0.std.toFixed(3)} → ${t.std.toFixed(3)}.` },
+      { label: 'Look · softer contrast', score: rangeScore(t.std / Math.max(1e-3, t0.std), 0.6, 0.92, 0.15), weight: 1, detail: `Spread ${t0.std.toFixed(3)} → ${t.std.toFixed(3)}.` },
       { label: 'Look · grain', score: p.grain >= 0.1 ? 100 : p.grain > 0 ? 60 : 0, weight: 0.5, detail: `Grain ${Math.round(p.grain * 100)}.` },
     ];
     return { criteria: crit, worked: crit[0].score >= 85 ? ['The warmth feels like late light, not a filter.'] : [], improve: crit[1].score < 85 ? ['Lift the black point (curve or Faded blacks) for the printed-film softness.'] : [] };

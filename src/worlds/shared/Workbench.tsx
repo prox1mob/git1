@@ -155,7 +155,7 @@ export function GradingChallenge({ ctx, title, intro, rounds, why, subjective, e
       const ref = engine.analyzeScenario({
         source: rd.reference?.source ?? rd.source,
         capture: rd.reference ? rd.reference.capture : rd.capture,
-        params: defaultParams({ ...rd.initial, ...rd.reference?.params }),
+        params: rd.reference ? defaultParams(rd.reference.params) : defaultParams(rd.initial),
         view: { signal: rd.signal },
       });
       return rd.evaluate(f, params[k], ctx.difficulty, ref);

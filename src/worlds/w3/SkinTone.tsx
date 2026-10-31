@@ -7,7 +7,7 @@ import type { Frame } from '../../engine/GradeEngine';
 import { defaultParams, type GradeParams } from '../../engine/params';
 import { sceneMeta } from '../../engine/scenes';
 import type { LevelProps } from '../../game/registry';
-import { errorToScore, rangeScore } from '../../lib/color';
+import { deltaE2000, errorToScore, rangeScore, rgbToLab } from '../../lib/color';
 import { skinReport } from '../shared/measure';
 import { GradingChallenge, LiveMetric, Workbench, type GradingRound } from '../shared/Workbench';
 
@@ -67,14 +67,17 @@ const mk = (id: string, label: string, skin: number, capture: GradingRound['capt
   live: (f) => { const s = skinReport(f); return <><LiveMetric label="Off the skin line" value={`${s.error.toFixed(1)}°`} ok={s.error < 5} target="< 5°" /><LiveMetric label="Skin L*" value={s.L.toFixed(0)} ok={false} /></>; },
   evaluate: (f, _p, _d, ref) => {
     const s = skinReport(f), t = ref ? skinReport(ref) : s;
-    const hue = errorToScore(s.error, 3, 20);
+    const truthDE = deltaE2000(rgbToLab(s.rgb), rgbToLab(t.rgb));
+    const match = errorToScore(truthDE, 2, 14);
+    const hue = errorToScore(s.error, 4, 20);
     const satR = s.C / Math.max(1, t.C);
     const sat = rangeScore(satR, 0.82, 1.2, 0.4);
     const dL = s.L - t.L;
     const light = errorToScore(Math.abs(dL), 3, 15);
     return {
       criteria: [
-        { label: 'Hue on the skin line', score: hue, weight: 2, detail: `${s.error.toFixed(1)}° from 123°.` },
+        { label: 'Matches the person’s true skin', score: match, weight: 3, detail: `ΔE00 ${truthDE.toFixed(1)} from their skin under clean light.` },
+        { label: 'Hue on the skin line', score: hue, weight: 1, detail: `${s.error.toFixed(1)}° from 123°.` },
         { label: 'Natural saturation', score: sat, weight: 1, detail: `Skin chroma ${Math.round(satR * 100)}% of the true complexion.` },
         { label: 'Complexion respected', score: light, weight: 1, detail: `Lightness ${dL >= 0 ? '+' : ''}${dL.toFixed(1)} L* vs. the person’s true skin.` },
       ],
@@ -90,9 +93,9 @@ const mk = (id: string, label: string, skin: number, capture: GradingRound['capt
 });
 
 const rounds: GradingRound[] = [
-  mk('green', 'Green spill', 1, { castTint: 38, castTemp: 5800 }, {}, 'Shot beside a sunlit hedge: green bounce light has contaminated a light complexion.'),
-  mk('magenta', 'LED magenta', 3, { castTint: -36, castTemp: 6800 }, {}, 'A cheap LED key has pushed this medium complexion toward magenta.'),
-  mk('oversat', 'Over-cooked', 5, { castTemp: 5200 }, { saturation: 1.55 }, 'A previous editor cranked saturation on this deep complexion and the light was warm. Make it natural.'),
+  mk('green', 'Green spill', 1, { castTint: 48, castTemp: 5600 }, {}, 'Shot beside a sunlit hedge: green bounce light has contaminated a light complexion.'),
+  mk('magenta', 'LED magenta', 3, { castTint: -55, castTemp: 7600 }, {}, 'A cheap LED key has pushed this medium complexion toward magenta.'),
+  mk('oversat', 'Over-cooked', 5, { castTemp: 4300 }, { saturation: 1.6 }, 'A previous editor cranked saturation on this deep complexion and the light was warm. Make it natural.'),
 ];
 
 export default function SkinTone({ level }: LevelProps) {
