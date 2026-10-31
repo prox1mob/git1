@@ -40,7 +40,9 @@ export function SketchView({ extent = 80, center = [0, 0], grid = 10, children, 
   const aspect = size.h / size.w;
   const hh = view.hw * aspect;
   const pxPerMm = size.w / (view.hw * 2);
-  useEffect(() => onScale?.(pxPerMm), [pxPerMm, onScale]);
+  useEffect(() => {
+    onScale?.(pxPerMm);
+  }, [pxPerMm, onScale]);
 
   const toMm = (clientX: number, clientY: number): Vec2 => {
     const r = svg.current!.getBoundingClientRect();

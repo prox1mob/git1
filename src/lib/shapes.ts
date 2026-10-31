@@ -18,6 +18,8 @@ export interface ExtrusionParams {
   holes: Vec2[][];
   depth: number;
   bevel: number;
+  /** 1 = chamfer (flat bevel); more segments = rounded edge. */
+  bevelSegs?: number;
 }
 export interface LatheParams {
   profile: Vec2[]; // (radius, height) pairs
@@ -144,7 +146,7 @@ export function extrusionGeometry(p: ExtrusionParams) {
     bevelThickness: bevel,
     bevelSize: bevel,
     bevelOffset: -bevel,
-    bevelSegments: bevel > 0 ? 4 : 0,
+    bevelSegments: bevel > 0 ? (p.bevelSegs ?? 4) : 0,
     curveSegments: 24,
   });
   // Extrude along +Z from z=0; centre it so the sketch plane is the mid-plane.
