@@ -37,6 +37,17 @@ const FEATURES: { area: string; items: [string, St, string?][] }[] = [
     ],
   },
   {
+    area: 'Engineering & simulation',
+    items: [
+      ['2D geometric constraint solver with DOF, conflict and redundancy analysis', 'done'],
+      ['Mesh Booleans, patterns, parametric feature history', 'done', 'Mesh-based (three-bvh-csg), not a B-rep kernel: no edge-by-edge fillets or STEP.'],
+      ['Involute gear generation with correct meshing', 'done'],
+      ['Rigid-body physics demos (Rapier): gravity, balance, friction, torque, stacking', 'done', 'Simplified teaching models, clearly labelled.'],
+      ['3D-print analysis: overhangs, supports, slicing, infill, watertightness', 'done', 'Geometric checks only; validate with your machine and slicer.'],
+      ['Finite-element stress analysis', 'planned', 'Beam formulas are used instead; FEA would need a solver library.'],
+    ],
+  },
+  {
     area: 'Game systems',
     items: [
       ['XP, ranks and level progression', 'done'],
@@ -50,6 +61,7 @@ const FEATURES: { area: string; items: [string, St, string?][] }[] = [
       ['Project portfolio (printable)', 'done'],
       ['Optional Tamil explanations', 'done'],
       ['Cloud sync / accounts', 'planned', 'Progress is stored on this device only.'],
+      ['Offline install cache (service worker)', 'planned', 'The app runs without a network once loaded, but is not yet cached for a cold offline start.'],
     ],
   },
 ];
