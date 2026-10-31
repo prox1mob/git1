@@ -295,6 +295,7 @@ function Glossary() {
 
 function ProgressPage() {
   const s = useAppState();
+  const [confirmErase, setConfirmErase] = useState(false);
   const ok = storageAvailable();
   const topics = LEVELS.flatMap((l) => l.topics);
   const done = topics.filter((t) => topicDone(t, s)).length;
@@ -314,14 +315,15 @@ function ProgressPage() {
           </div>
         );
       })}
-      <button
-        className="btn danger"
-        onClick={() => {
-          if (window.confirm('Erase all progress and stars on this device?')) resetProgress();
-        }}
-      >
-        Erase progress
-      </button>
+      {!confirmErase ? (
+        <button className="btn danger" onClick={() => setConfirmErase(true)}>Erase progress…</button>
+      ) : (
+        <div className="toolbar" style={{ marginTop: 16 }}>
+          <span>Erase all progress and stars on this device?</span>
+          <button className="btn danger" style={{ marginTop: 0 }} onClick={() => { resetProgress(); setConfirmErase(false); }}>Yes, erase</button>
+          <button className="btn" onClick={() => setConfirmErase(false)}>Keep it</button>
+        </div>
+      )}
     </div>
   );
 }
