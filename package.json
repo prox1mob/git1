@@ -2,8 +2,9 @@
   "name": "the-3d-lab",
   "private": true,
   "version": "0.1.0",
-  "description": "THE 3D LAB \u2014 From Imagination to Reality. An interactive game for learning 3D modelling, CAD, engineering, physics and product invention.",
+  "description": "THE 3D LAB — From Imagination to Reality. An interactive game for learning 3D modelling, CAD, engineering, physics and product invention.",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite --host",
     "build": "tsc -b && vite build",
@@ -12,7 +13,10 @@
     "test": "vitest run",
     "android:sync": "npm run build && cap sync android",
     "android:apk": "npm run android:sync && cd android && ./gradlew assembleRelease",
-    "android:assets": "node scripts/android-assets.mjs"
+    "android:assets": "node scripts/android-assets.mjs",
+    "electron:dev": "npm run build && electron .",
+    "mac:assets": "node scripts/mac-assets.mjs",
+    "mac:dmg": "npm run build && npm run mac:assets && electron-builder --mac --x64 --arm64 --publish never"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.0",
@@ -37,8 +41,53 @@
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.187.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^45.2.1",
+    "electron-builder": "^26.18.0",
+    "png2icons": "^2.0.1",
     "typescript": "^5.9.3",
     "vite": "^8.3.5",
     "vitest": "^5.0.5"
+  },
+  "build": {
+    "appId": "io.github.prox1mob.the3dlab",
+    "productName": "The 3D Lab",
+    "copyright": "Copyright © The 3D Lab contributors",
+    "directories": {
+      "output": "release",
+      "buildResources": "build-resources"
+    },
+    "files": [
+      "electron/**/*",
+      "dist/**/*",
+      "!**/*.map",
+      "package.json",
+      "!node_modules/**/*"
+    ],
+    "extraMetadata": {
+      "main": "electron/main.cjs"
+    },
+    "mac": {
+      "category": "public.app-category.education",
+      "icon": "build-resources/icon.icns",
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ],
+      "darkModeSupport": true,
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "The 3D Lab ${version}",
+      "icon": "build-resources/icon.icns",
+      "iconSize": 128,
+      "background": "build-resources/dmg-background.png",
+      "window": { "width": 660, "height": 420 },
+      "contents": [
+        { "x": 170, "y": 260, "type": "file" },
+        { "x": 490, "y": 260, "type": "link", "path": "/Applications" }
+      ],
+      "artifactName": "The-3D-Lab-${version}-${arch}.${ext}"
+    }
   }
 }

@@ -62,7 +62,8 @@ const FEATURES: { area: string; items: [string, St, string?][] }[] = [
       ['Optional Tamil explanations', 'done'],
       ['Cloud sync / accounts', 'planned', 'Progress is stored on this device only.'],
       ['Android app (APK, Capacitor wrapper) with offline start, back button, file export via the share sheet and printing', 'done', 'Built by GitHub Actions; see the README. Signed with a public sideload key unless you configure your own.'],
-      ['Offline install cache for the web version (service worker)', 'planned', 'The web version runs without a network once loaded but is not cached for a cold offline start. The Android app does not need this: everything is inside the APK.'],
+      ['macOS app (DMG, Electron wrapper) with native Save As export and printing', 'done', 'Built by GitHub Actions for Apple Silicon and Intel; see the README. Unsigned — Gatekeeper needs a one-time right-click → Open unless you add your own Apple Developer certificate.'],
+      ['Offline install cache for the web version (service worker)', 'planned', 'The web version runs without a network once loaded but is not cached for a cold offline start. The Android and macOS apps do not need this: everything is inside the app.'],
     ],
   },
 ];

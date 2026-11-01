@@ -9,7 +9,7 @@ import { Modal, Seg } from '../../components/ui';
 import { createEditorStore, EditorContext, useEd } from '../../store/editorStore';
 import { getGeometry, triangleCount, type SceneObject } from '../../lib/shapes';
 import { exportGLTF, exportSTL } from '../../lib/export';
-import { isNative } from '../../lib/native';
+import { isElectron, isNative } from '../../lib/native';
 import { getProject, listProjects, saveVersion, takeIncoming, type Project } from '../../lib/storage';
 import { navigate } from '../../lib/router';
 import { toast } from '../../store/toast';
@@ -100,7 +100,7 @@ function EditorInner({ projectId }: { projectId?: string }) {
       } else await exportGLTF(rootRef.current, project.name, kind === 'glb');
       announce(useProgress.getState().bump('exports'));
       setExportOpen(false);
-      if (!isNative) toast('📦 Export ready — check your downloads.');
+      if (!isNative && !isElectron) toast('📦 Export ready — check your downloads.');
     } catch (e) {
       toast(`Export failed: ${(e as Error).message}`);
     }

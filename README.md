@@ -26,6 +26,18 @@ The repository includes an Android project (`android/`, made with [Capacitor](ht
 
 **Signing:** builds are signed with `android/app/the3dlab-sideload.jks` (password `the3dlab-sideload`) so that updates install over each other. That key is public and only suitable for sideloading. Before publishing to an app store, create your own key and add it as repository secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`; the workflow then uses it instead (an app signed with a different key must be uninstalled once before installing).
 
+## macOS app (DMG)
+
+The repository also includes a desktop wrapper (`electron/`, made with [Electron](https://www.electronjs.org)) for Mac. It runs fully offline from a single window, keeps progress on the device, exports STL/GLB/glTF/JSON through a native *Save As* dialog, and the portfolio's *Print* button opens macOS's print / *Save as PDF* dialog. The web build is served through a custom `app://` scheme rather than `file://`, which is what lets the per-level code-splitting (dynamic `import()`) work inside the packaged app.
+
+**Get the DMG:** every push to this branch (or *Actions → macOS DMG → Run workflow*) builds it with GitHub Actions and publishes two files under **Releases**: `The-3D-Lab-1.0.N-arm64.dmg` (Apple Silicon) and `The-3D-Lab-1.0.N-x64.dmg` (Intel) — pick the one matching your Mac (Apple menu → *About This Mac*). Open the DMG and drag **The 3D Lab** into *Applications*.
+
+**Gatekeeper:** the app is unsigned (no Apple Developer certificate), so the first launch will say it "can't be opened because Apple cannot check it for malicious software." Right-click (or Control-click) the app in *Applications* and choose **Open**, then confirm — needed once, after that it opens normally. (Apple Developer Program membership costs money and isn't a reasonable thing to assume on your behalf — see *Signing* below.)
+
+**Build it yourself** (needs a Mac, or any OS for `--dir` testing; DMG creation itself needs macOS's own `hdiutil`): `npm run mac:dmg` → `release/The-3D-Lab-*.dmg`. `npm run mac:assets` re-renders the app icon and DMG background from the logo; `npm run electron:dev` runs the built app directly without packaging it, for quick testing.
+
+**Signing:** builds are unsigned (`identity: null` in `package.json`'s `build.mac`), which is why Gatekeeper warns on first open. To remove that warning, get an Apple Developer ID certificate, export it as a `.p12`, and add it as repository secrets `MAC_CSC_LINK` (base64 of the `.p12`) and `MAC_CSC_KEY_PASSWORD`, then point `electron-builder`'s `CSC_LINK`/`CSC_KEY_PASSWORD` env vars at them in the workflow (and, for distribution outside your own Macs, notarize with `@electron/notarize` using an app-specific Apple ID password).
+
 `node scripts/smoke.mjs http://localhost:4173/ /level/w1-l1 …` opens routes in headless Chromium and fails on console errors (used to check all 78 routes).
 
 ## What is built
@@ -55,8 +67,9 @@ Every challenge returns: what is correct, what is wrong (with measured values), 
 - **Physics and engineering numbers** are simplified teaching models (rigid bodies, single friction coefficient, ideal beam theory, rounded material data) and are labelled as such. They are not engineering validation.
 - **Manufacturing checks** are geometric only; real suitability depends on the machine, material and process.
 - **Freeform sketch reconstruction** from perspective drawings is not attempted (it is ambiguous); only closed profiles are extruded or revolved.
-- **Storage** is local to the device (localStorage + IndexedDB). No accounts or cloud sync. The web version has no service-worker offline cache yet (the Android app does not need one). Uninstalling the Android app deletes its progress, so export models you want to keep.
+- **Storage** is local to the device (localStorage + IndexedDB). No accounts or cloud sync. The web version has no service-worker offline cache yet (the Android and macOS apps do not need one). Uninstalling the Android or macOS app deletes its progress, so export models you want to keep.
 - **Stylus pressure** and palm rejection are not used.
+- **The macOS app is unsigned and not notarized** — no Apple Developer certificate is set up for this project. Gatekeeper needs one right-click → Open per Mac on first launch (see the macOS app section above); the README explains how to add your own certificate to remove that.
 - Performance guidance: the editor is designed for ~150 objects / 500k triangles on mid-range tablets; the status bar warns above that.
 
 ## Project layout
@@ -70,9 +83,13 @@ src/
   screens/                          home, worlds, editor, sketch studio, physics lab, gallery, portfolio, profile, status
   worlds/                           meta.ts (all worlds/levels), components.ts (playable registry), w1…w9 level code
 android/                            Capacitor Android project (native print plugin, icons, signing)
+electron/                           macOS/desktop app (main process, preload bridge, app:// static server)
+build-resources/                    macOS app icon (.icns) and DMG window background
 scripts/smoke.mjs                   headless route checker
 scripts/android-assets.mjs          renders Android launcher icons and splash screens
+scripts/mac-assets.mjs              renders the macOS app icon and DMG background
 .github/workflows/android-apk.yml   builds the APK and publishes it as a GitHub release
+.github/workflows/macos-dmg.yml     builds the DMGs and publishes them as a GitHub release
 ```
 
 Add a level by creating a component in `src/worlds/wN/` that renders `<LevelShell>` and registering it in `src/worlds/components.ts`; anything not registered is shown as *Planned*.

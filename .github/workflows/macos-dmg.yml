@@ -1,0 +1,73 @@
+name: macOS DMG
+
+# Builds the desktop app (Electron wrapper around the web build) for Intel and Apple
+# Silicon Macs and publishes the DMGs as a GitHub release, so they can be downloaded
+# and installed directly.
+on:
+  push:
+    branches: [claude/3d-lab-learning-game-2xbjsa, main]
+    paths-ignore: ['**.md']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: macos-dmg-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dmg:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install, test and build the web app
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      - name: Set the build version
+        run: npm pkg set version="1.0.${{ github.run_number }}"
+
+      - name: Build unsigned DMGs (Intel and Apple Silicon)
+        # The DMG and app icon (build-resources/) are committed to the repo — generated locally
+        # with `npm run mac:assets`, the same way the Android launcher icons are. Unsigned: there
+        # is no Apple Developer certificate here, see README for how to add one.
+        run: npx electron-builder --mac --x64 --arm64 --publish never -c.mac.identity=null
+
+      - name: Verify the DMGs
+        id: dmgs
+        run: |
+          ls -la release/*.dmg
+          for f in release/*.dmg; do
+            file "$f"
+            hdiutil imageinfo "$f" | head -n 8
+          done
+          { echo 'list<<EOF'; ls release/*.dmg; echo EOF; } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: the-3d-lab-dmg
+          path: release/*.dmg
+
+      - name: Publish a release with the DMGs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "dmg-v1.0.${{ github.run_number }}" release/*.dmg \
+            --target "${{ github.sha }}" \
+            --title "The 3D Lab for Mac v1.0.${{ github.run_number }}" \
+            --latest \
+            --notes "macOS app built from ${{ github.sha }} (branch ${{ github.ref_name }}).
+
+          Two DMGs: one for Apple Silicon (arm64) and one for Intel Macs (x64) — pick the one matching your Mac (Apple menu → About This Mac).
+
+          Install: open the DMG, drag The 3D Lab into Applications. The app is unsigned (no Apple Developer certificate), so the first time you open it, Gatekeeper will say it can't verify the developer: right-click (or Control-click) the app in Applications and choose Open, then confirm — this is only needed once."
