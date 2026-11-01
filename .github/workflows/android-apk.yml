@@ -1,0 +1,95 @@
+name: Android APK
+
+# Builds the Android app (Capacitor wrapper around the web build) and publishes the APK
+# as a GitHub release, so it can be downloaded and installed directly on a tablet.
+on:
+  push:
+    branches: [claude/3d-lab-learning-game-2xbjsa, main]
+    paths-ignore: ['**.md']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LAB_BUILD_NUMBER: ${{ github.run_number }}
+      HAS_PRIVATE_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Install, test and build the web app
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      - name: Copy the web app into the Android project
+        run: npx cap sync android
+
+      - name: Use the private signing key (optional repository secrets)
+        if: env.HAS_PRIVATE_KEY == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Build the signed APK
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace assembleRelease
+
+      - name: Verify and name the APK
+        id: apk
+        run: |
+          name="the-3d-lab-v1.0.${{ github.run_number }}.apk"
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk "out/$name"
+          bt=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$bt/apksigner" verify --print-certs "out/$name"
+          "$bt/aapt2" dump badging "out/$name" | head -n 3
+          ls -l out
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: the-3d-lab-apk
+          path: out/*.apk
+
+      - name: Publish a release with the APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "apk-v1.0.${{ github.run_number }}" "out/${{ steps.apk.outputs.name }}" \
+            --target "${{ github.sha }}" \
+            --title "The 3D Lab for Android v1.0.${{ github.run_number }}" \
+            --latest \
+            --notes "Android APK built from ${{ github.sha }} (branch ${{ github.ref_name }}).
+
+          Install: download the .apk on the tablet, open it, and allow installing from this source when Android asks. Later versions install over this one and keep your progress.
+
+          Signed with the project's sideload key unless a private key is configured as repository secrets."

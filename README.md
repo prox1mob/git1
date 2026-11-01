@@ -16,6 +16,16 @@ npm test             # unit tests (constraint solver, gears, mesh analysis, encl
 
 **On an Android tablet:** run `npm run dev`, open the printed *Network* URL in Chrome on the tablet (same Wi-Fi), then use *Add to Home screen* for a full-screen app. Touch: one finger orbits / drags, two fingers pinch-zoom / pan, and in object-gesture mode pinch scales and twist rotates. A stylus works as a precise pointer (pressure is not used).
 
+## Android app (APK)
+
+The repository includes an Android project (`android/`, made with [Capacitor](https://capacitorjs.com)) that packages the whole game into an installable app. It runs fully offline, keeps progress on the device, follows the Android back button, saves exports to *Documents/The3DLab* and opens the share sheet (send an STL to a slicer, Drive, e-mail…), and the portfolio's *Print* button opens Android's print / *Save as PDF* dialog.
+
+**Get the APK:** every push to this branch (or *Actions → Android APK → Run workflow*) builds it with GitHub Actions and publishes it under **Releases** (`the-3d-lab-v1.0.N.apk`). On the tablet, open the release page, download the APK, tap it and allow installing from that source. Newer builds install over older ones and keep your progress. Requires Android 7.0 or newer with an up-to-date *Android System WebView* (WebGL 2).
+
+**Build it yourself** (needs Android Studio or the Android SDK with platform 36, and JDK 21): `npm run android:apk` → `android/app/build/outputs/apk/release/app-release.apk`. `npm run android:sync` copies a fresh web build into the Android project; `npm run android:assets` re-renders the launcher icons and splash screens from the logo.
+
+**Signing:** builds are signed with `android/app/the3dlab-sideload.jks` (password `the3dlab-sideload`) so that updates install over each other. That key is public and only suitable for sideloading. Before publishing to an app store, create your own key and add it as repository secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`; the workflow then uses it instead (an app signed with a different key must be uninstalled once before installing).
+
 `node scripts/smoke.mjs http://localhost:4173/ /level/w1-l1 …` opens routes in headless Chromium and fails on console errors (used to check all 78 routes).
 
 ## What is built
@@ -45,7 +55,7 @@ Every challenge returns: what is correct, what is wrong (with measured values), 
 - **Physics and engineering numbers** are simplified teaching models (rigid bodies, single friction coefficient, ideal beam theory, rounded material data) and are labelled as such. They are not engineering validation.
 - **Manufacturing checks** are geometric only; real suitability depends on the machine, material and process.
 - **Freeform sketch reconstruction** from perspective drawings is not attempted (it is ambiguous); only closed profiles are extruded or revolved.
-- **Storage** is local to the device (localStorage + IndexedDB). No accounts or cloud sync; no service-worker offline cache yet.
+- **Storage** is local to the device (localStorage + IndexedDB). No accounts or cloud sync. The web version has no service-worker offline cache yet (the Android app does not need one). Uninstalling the Android app deletes its progress, so export models you want to keep.
 - **Stylus pressure** and palm rejection are not used.
 - Performance guidance: the editor is designed for ~150 objects / 500k triangles on mid-range tablets; the status bar warns above that.
 
@@ -59,7 +69,10 @@ src/
   store/                            progress (XP, badges, unlocks, settings) and editor (undo/redo, grouping, booleans)
   screens/                          home, worlds, editor, sketch studio, physics lab, gallery, portfolio, profile, status
   worlds/                           meta.ts (all worlds/levels), components.ts (playable registry), w1…w9 level code
+android/                            Capacitor Android project (native print plugin, icons, signing)
 scripts/smoke.mjs                   headless route checker
+scripts/android-assets.mjs          renders Android launcher icons and splash screens
+.github/workflows/android-apk.yml   builds the APK and publishes it as a GitHub release
 ```
 
 Add a level by creating a component in `src/worlds/wN/` that renders `<LevelShell>` and registering it in `src/worlds/components.ts`; anything not registered is shown as *Planned*.

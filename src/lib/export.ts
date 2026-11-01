@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
+import { isNative, saveNativeFile } from './native';
+import { toast } from '../store/toast';
 
 function visibleInTree(o: THREE.Object3D) {
   let c: THREE.Object3D | null = o;
@@ -35,7 +37,12 @@ function hasAncestorId(o: THREE.Object3D, ids: Set<string>) {
   return false;
 }
 
+/** Browser: normal file download. Android app: save to Documents and open the share sheet. */
 export function download(blob: Blob, filename: string) {
+  if (isNative) {
+    saveNativeFile(blob, filename).catch((e) => toast(`Could not save ${filename}: ${(e as Error).message}`));
+    return;
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

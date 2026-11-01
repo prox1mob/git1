@@ -1,0 +1,15 @@
+{
+  "appId": "io.github.prox1mob.the3dlab",
+  "appName": "The 3D Lab",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#0b0f14"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover",
+      "style": "DARK"
+    }
+  }
+}

@@ -4,6 +4,7 @@ import { BADGES, rankOf, useProgress } from '../store/progress';
 import { ALL_LEVELS } from '../worlds/meta';
 import { SkillRadar } from './Profile';
 import { download } from '../lib/export';
+import { printPage } from '../lib/native';
 import { navigate } from '../lib/router';
 
 export default function Portfolio() {
@@ -27,7 +28,7 @@ export default function Portfolio() {
         <button className="btn small" onClick={() => navigate('/')}>
           ← Home
         </button>
-        <button className="btn small" onClick={() => window.print()}>
+        <button className="btn small" onClick={() => printPage('The 3D Lab portfolio')}>
           🖨 Print / save as PDF
         </button>
         <button

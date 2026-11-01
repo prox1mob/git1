@@ -61,7 +61,8 @@ const FEATURES: { area: string; items: [string, St, string?][] }[] = [
       ['Project portfolio (printable)', 'done'],
       ['Optional Tamil explanations', 'done'],
       ['Cloud sync / accounts', 'planned', 'Progress is stored on this device only.'],
-      ['Offline install cache (service worker)', 'planned', 'The app runs without a network once loaded, but is not yet cached for a cold offline start.'],
+      ['Android app (APK, Capacitor wrapper) with offline start, back button, file export via the share sheet and printing', 'done', 'Built by GitHub Actions; see the README. Signed with a public sideload key unless you configure your own.'],
+      ['Offline install cache for the web version (service worker)', 'planned', 'The web version runs without a network once loaded but is not cached for a cold offline start. The Android app does not need this: everything is inside the APK.'],
     ],
   },
 ];

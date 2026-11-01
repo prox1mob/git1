@@ -2,16 +2,24 @@
   "name": "the-3d-lab",
   "private": true,
   "version": "0.1.0",
-  "description": "THE 3D LAB — From Imagination to Reality. An interactive game for learning 3D modelling, CAD, engineering, physics and product invention.",
+  "description": "THE 3D LAB \u2014 From Imagination to Reality. An interactive game for learning 3D modelling, CAD, engineering, physics and product invention.",
   "type": "module",
   "scripts": {
     "dev": "vite --host",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host",
     "typecheck": "tsc -b",
-    "test": "vitest run"
+    "test": "vitest run",
+    "android:sync": "npm run build && cap sync android",
+    "android:apk": "npm run android:sync && cd android && ./gradlew assembleRelease",
+    "android:assets": "node scripts/android-assets.mjs"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.6.0",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/share": "^8.0.3",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
     "@react-three/rapier": "^2.2.0",
@@ -24,6 +32,7 @@
     "zustand": "^5.0.16"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.187.0",
