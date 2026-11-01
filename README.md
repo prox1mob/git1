@@ -18,6 +18,15 @@ The app is wrapped for Android with [Capacitor](https://capacitorjs.com) (`capac
 
 The APK is a *debug* build, signed with a development key: ideal for sideloading and testing. Publishing on Google Play needs a release build signed with your own key.
 
+## macOS app (DMG)
+
+The desktop app wraps the same build with [Electron](https://www.electronjs.org) (`electron/main.cjs`). It serves the bundled app from a private `app://` origin, so it runs fully offline and keeps its own progress and gallery.
+
+- **Easiest:** every push runs the **macOS DMG** workflow (`.github/workflows/mac-dmg.yml`) on a GitHub macOS runner. Download `the-visual-lab-dmg` from the run’s *Artifacts*, unzip, open `The-Visual-Lab-<version>-mac.dmg` and drag the app to Applications. It is a universal build for Apple Silicon and Intel Macs, macOS 12 or later.
+- **Locally on a Mac:** `npm run dist:mac` (DMG in `release/`), or `npm run desktop` to run it without packaging.
+
+The app is ad-hoc signed but **not notarised** (that needs a paid Apple Developer ID). The first time you open it macOS will refuse; go to *System Settings → Privacy & Security* and choose **Open Anyway** (on macOS 14 and earlier you can also Control-click the app and choose *Open*).
+
 Requires a browser with WebGL2 for the grading worlds (any recent Chrome, Edge, Firefox or Safari, including Android tablets). The Colour and Typography worlds work without it.
 
 ## What is in the game

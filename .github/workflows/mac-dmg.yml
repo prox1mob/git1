@@ -1,0 +1,51 @@
+name: macOS DMG
+
+# Builds a universal (Apple Silicon + Intel) DMG of The Visual Lab on a macOS runner.
+# Download it from the run's "Artifacts" section.
+on:
+  push:
+    branches: [main, claude/visual-lab-game-rh1b8a]
+    paths-ignore: ['**.md']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dmg:
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Build universal DMG (ad-hoc signed, not notarised)
+        run: npx electron-builder --mac --publish never
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: the-visual-lab-dmg
+          path: release/*.dmg
+          if-no-files-found: error
+
+      - name: Verify signature, architectures and launch
+        run: |
+          APP="release/mac-universal/The Visual Lab.app"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          lipo -archs "$APP/Contents/MacOS/The Visual Lab"
+          hdiutil verify release/*.dmg
+          perl -e 'alarm 120; exec @ARGV' "$APP/Contents/MacOS/The Visual Lab" --smoke-test | tee smoke.txt
+          grep -q '"ok":true' smoke.txt
