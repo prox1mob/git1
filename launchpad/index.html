@@ -1,0 +1,855 @@
+<title>Launchpad</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<!--
+  Launchpad: one calm place for every project prox1mob builds with Claude.
+  Source of the claude.ai artifact. Data (projects, ideas, wins, focus) lives in
+  the artifact's database, not in this file, so it opens empty outside Claude.
+-->
+<style>
+/* Layout: one calm column for a phone. A night-sky card on top holds the single thing to do now,
+   then the rescue list, all projects, the idea parking lot, recent wins and a live session check. */
+:root {
+  --bg: #eef1f7;
+  --surface: #ffffff;
+  --ink: #141a2e;
+  --muted: #566079;
+  --line: #d5dbe8;
+  --signal: #f2b33d;
+  --on-signal: #1d1400;
+  --signal-ink: #7a4f00;
+  --sky: #131b36;
+  --sky-2: #1f2b57;
+  --sky-ink: #eef1ff;
+  --sky-muted: #a3aed3;
+  --sky-line: #34437c;
+  --sky-field: #0d1430;
+  --beam: rgba(245, 189, 79, 0.24);
+  --ok: #17775b;   --ok-bg: #dcf2ea;
+  --warn: #b33d0b; --warn-bg: #fde6da;
+  --act: #2f4fb5;  --act-bg: #e1e8fb;
+  --pause: #5d6475; --pause-bg: #e6e8ee;
+  --f-display: "Bricolage Grotesque", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1224; --surface: #141c35; --ink: #e6eaf6; --muted: #97a1c0; --line: #253056;
+    --signal: #f5bd4f; --on-signal: #1d1400; --signal-ink: #f5bd4f;
+    --sky: #19234a; --sky-2: #25336a; --sky-ink: #eef1ff; --sky-muted: #aab4da; --sky-line: #3a4a86; --sky-field: #10183a;
+    --beam: rgba(245, 189, 79, 0.2);
+    --ok: #5ccfa6; --ok-bg: #123629; --warn: #ff9466; --warn-bg: #3b1d10;
+    --act: #9db4ff; --act-bg: #1c2756; --pause: #a3a9b8; --pause-bg: #222a42;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1224; --surface: #141c35; --ink: #e6eaf6; --muted: #97a1c0; --line: #253056;
+  --signal: #f5bd4f; --on-signal: #1d1400; --signal-ink: #f5bd4f;
+  --sky: #19234a; --sky-2: #25336a; --sky-ink: #eef1ff; --sky-muted: #aab4da; --sky-line: #3a4a86; --sky-field: #10183a;
+  --beam: rgba(245, 189, 79, 0.2);
+  --ok: #5ccfa6; --ok-bg: #123629; --warn: #ff9466; --warn-bg: #3b1d10;
+  --act: #9db4ff; --act-bg: #1c2756; --pause: #a3a9b8; --pause-bg: #222a42;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 var(--f-body);
+  -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 10; background: var(--bg);
+}
+h1, h2, h3, p { margin: 0; }
+h2, .sky-title, .step { text-wrap: balance; }
+a { color: inherit; text-underline-offset: 3px; }
+ul { list-style: none; margin: 0; padding: 0; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; border-radius: 8px; }
+
+.wrap {
+  max-width: 680px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* Top bar */
+.bar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); border-bottom: 1px solid var(--line);
+}
+.bar-in { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; font: 800 21px/1 var(--f-display); letter-spacing: -0.01em; }
+.mark {
+  width: 20px; height: 20px; border-radius: 50%; flex: none;
+  background: var(--signal); box-shadow: 0 0 0 4px var(--bg), 0 0 0 5px var(--signal);
+}
+.bar-meta { font: 400 13px/1.3 var(--f-mono); color: var(--muted); text-align: right; }
+
+main { display: grid; gap: 40px; padding-block: 20px 72px; }
+section { display: grid; gap: 14px; min-width: 0; }
+.sec-head { display: grid; gap: 4px; }
+h2 { font: 800 23px/1.15 var(--f-display); letter-spacing: -0.01em; }
+.sec-sub { color: var(--muted); max-width: 60ch; }
+.count { font: 600 13px/1 var(--f-mono); color: var(--signal-ink); margin-left: 8px; letter-spacing: 0; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 44px; padding: 10px 16px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  font: 700 15px/1.1 var(--f-body); text-decoration: none; cursor: pointer;
+}
+.btn:hover { border-color: var(--muted); }
+.btn[disabled] { opacity: 0.55; cursor: default; }
+.btn-signal { background: var(--signal); color: var(--on-signal); border-color: transparent; }
+.btn-signal:hover { border-color: transparent; filter: brightness(1.05); }
+.btn-sky { background: transparent; color: var(--sky-ink); border-color: var(--sky-line); }
+.btn-sky:hover { border-color: var(--sky-muted); }
+.btn-small { min-height: 36px; padding: 7px 12px; font-size: 14px; }
+.btn-text { background: none; border: 0; padding: 6px 4px; min-height: 36px; color: var(--muted); font: 700 14px var(--f-body); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+/* Focus card */
+.now {
+  position: relative; overflow: hidden;
+  display: grid; gap: 16px;
+  padding: 22px 20px 20px; border-radius: 22px;
+  color: var(--sky-ink);
+  background:
+    radial-gradient(130% 90% at 105% -10%, var(--beam), transparent 58%),
+    linear-gradient(180deg, var(--sky-2), var(--sky) 70%);
+}
+.eyebrow { font: 600 12px/1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--signal); }
+.focus-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.focus-proj { font: 700 15px/1.3 var(--f-body); color: var(--sky-muted); }
+.step { font: 800 clamp(25px, 6.6vw, 34px)/1.12 var(--f-display); letter-spacing: -0.015em; }
+.sky-title { font: 800 27px/1.15 var(--f-display); letter-spacing: -0.01em; }
+.sky-note { color: var(--sky-muted); max-width: 52ch; }
+.won { font: 700 15px/1.4 var(--f-body); color: var(--signal); animation: pop 0.5s ease-out; }
+.timer { font: 600 14px/1 var(--f-mono); color: var(--signal); }
+.now .links a { color: var(--sky-muted); }
+.links { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; }
+.now form { display: grid; gap: 10px; }
+.now label { font: 700 15px var(--f-body); }
+.field {
+  width: 100%; min-width: 0; padding: 12px 14px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 16px;
+}
+.now .field { background: var(--sky-field); border-color: var(--sky-line); color: var(--sky-ink); }
+.field::placeholder { color: var(--muted); }
+.now .field::placeholder { color: var(--sky-muted); }
+@keyframes pop { from { transform: translateY(4px); opacity: 0.35; } to { transform: none; opacity: 1; } }
+
+/* Shared list surface */
+.stack { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.stack > li + li { border-top: 1px solid var(--line); }
+.mono { font: 400 13px/1.4 var(--f-mono); color: var(--muted); overflow-wrap: anywhere; }
+
+/* Status chips */
+.chip { display: inline-block; font: 600 12px/1 var(--f-mono); padding: 5px 8px; border-radius: 999px; white-space: nowrap; }
+.st-live { color: var(--ok); background: var(--ok-bg); }
+.st-stuck { color: var(--warn); background: var(--warn-bg); }
+.st-active { color: var(--act); background: var(--act-bg); }
+.st-paused { color: var(--pause); background: var(--pause-bg); }
+
+/* Rescue */
+.msg {
+  display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  padding: 12px 14px; border: 1px dashed var(--line); border-radius: 12px; background: var(--surface);
+}
+.msg code { font: 400 14px/1.45 var(--f-mono); flex: 1 1 240px; min-width: 0; overflow-wrap: anywhere; }
+.rescue { padding: 14px 16px; display: grid; gap: 8px; }
+.r-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.r-name { font: 700 17px/1.3 var(--f-body); }
+.r-why { color: var(--muted); font-size: 15px; }
+
+/* Projects */
+.group-h { font: 600 12px/1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 6px 0 -4px; }
+.proj-row {
+  width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px;
+  padding: 14px 16px; min-height: 60px; background: none; border: 0; text-align: left; cursor: pointer;
+}
+.p-name { font: 700 16px/1.3 var(--f-body); }
+.p-pitch { grid-column: 1 / -1; color: var(--muted); font-size: 14px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.p-live { grid-column: 1 / -1; font: 400 12px/1.3 var(--f-mono); color: var(--act); }
+.proj.open .p-pitch { -webkit-line-clamp: unset; display: block; }
+.proj-body { padding: 0 16px 16px; display: grid; gap: 14px; }
+.proj-body form { display: grid; gap: 8px; }
+.proj-body label { font: 700 14px var(--f-body); color: var(--muted); }
+.inline { display: flex; gap: 8px; }
+.inline .field { flex: 1 1 auto; }
+select.field { padding-block: 10px; }
+.builds { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Ideas */
+.add { display: flex; gap: 8px; }
+.add .field { flex: 1 1 auto; }
+.idea { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 16px; align-items: center; }
+.idea-text { overflow-wrap: anywhere; }
+.idea-meta { font: 400 12px/1.3 var(--f-mono); color: var(--muted); }
+.nudge { font-size: 15px; color: var(--muted); padding: 10px 14px; border-radius: 12px; background: var(--pause-bg); }
+
+/* Wins */
+.win { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; padding: 11px 16px; align-items: baseline; }
+.tick { color: var(--ok); font-weight: 700; }
+.win-day { font: 400 12px/1.3 var(--f-mono); color: var(--muted); white-space: nowrap; }
+
+/* Sessions */
+.live-sum { font: 400 14px/1.5 var(--f-mono); color: var(--muted); }
+.note { font-size: 15px; color: var(--muted); }
+.note.err { color: var(--warn); }
+.newsess { padding: 12px 16px; display: grid; gap: 8px; }
+
+.empty { color: var(--muted); padding: 14px 16px; }
+footer { border-top: 1px solid var(--line); padding-top: 16px; font: 400 13px/1.6 var(--f-mono); color: var(--muted); }
+
+/* Toast */
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 20;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  max-width: calc(100% - 32px); width: max-content;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 12px; background: var(--ink); color: var(--bg);
+  font: 700 15px/1.3 var(--f-body);
+}
+.toast button { background: none; border: 0; color: var(--signal); font-weight: 700; cursor: pointer; padding: 4px; }
+
+@media (max-width: 420px) {
+  .add, .inline { flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+
+<header class="bar">
+  <div class="wrap bar-in">
+    <div class="brand"><span class="mark" aria-hidden="true"></span>Launchpad</div>
+    <p class="bar-meta" id="bar-meta"></p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="now" aria-labelledby="now-label">
+    <p class="eyebrow" id="now-label">Right now · one thing</p>
+    <div id="focus" style="display:grid;gap:16px">
+      <p class="sky-note">Loading your board…</p>
+    </div>
+  </section>
+
+  <section id="rescue" aria-labelledby="rescue-h" hidden>
+    <div class="sec-head">
+      <h2 id="rescue-h">Stuck in Claude sessions<span class="count" id="rescue-count"></span></h2>
+      <p class="sec-sub">These were built, but GitHub refused the push (error 403) back then. Access works now, so each one is a single message away from being safe. Open the session and send this:</p>
+    </div>
+    <div class="msg">
+      <code id="push-msg">GitHub access works now. Please push this branch to origin and tell me when it's on GitHub.</code>
+      <button class="btn btn-small" id="copy-msg" type="button">Copy</button>
+    </div>
+    <ul class="stack" id="rescue-list"></ul>
+  </section>
+
+  <section aria-labelledby="proj-h">
+    <div class="sec-head">
+      <h2 id="proj-h">All projects<span class="count" id="proj-count"></span></h2>
+      <p class="sec-sub">Tap one to change its next step, status or links.</p>
+    </div>
+    <div id="project-groups" style="display:grid;gap:12px">
+      <p class="empty stack">Your projects will appear here.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="ideas-h">
+    <div class="sec-head">
+      <h2 id="ideas-h">Idea parking lot<span class="count" id="ideas-count"></span></h2>
+      <p class="sec-sub">New idea at 1 am? Park it here. It stays safe, and you don't have to start it tonight.</p>
+    </div>
+    <form class="add" id="idea-form">
+      <input class="field" id="idea-input" maxlength="280" autocomplete="off" placeholder="An app that…" aria-label="New idea">
+      <button class="btn btn-signal" type="submit">Park it</button>
+    </form>
+    <p class="nudge" id="wip-nudge" hidden></p>
+    <ul class="stack" id="idea-list"><li class="empty">No parked ideas yet.</li></ul>
+  </section>
+
+  <section aria-labelledby="wins-h">
+    <div class="sec-head">
+      <h2 id="wins-h">Done lately<span class="count" id="wins-count"></span></h2>
+      <p class="sec-sub">Every step you finish lands here.</p>
+    </div>
+    <ul class="stack" id="win-list"><li class="empty">Finish a step and it shows up here.</li></ul>
+  </section>
+
+  <section aria-labelledby="sync-h" id="sync">
+    <div class="sec-head">
+      <h2 id="sync-h">Your Claude Code sessions</h2>
+      <p class="sec-sub">See which sessions are working, waiting for you or finished, and catch new ones that aren't on the board yet.</p>
+    </div>
+    <div class="row">
+      <button class="btn" id="sync-btn" type="button">Check sessions</button>
+      <span class="live-sum" id="live-sum"></span>
+    </div>
+    <p class="note" id="sync-note" hidden></p>
+    <ul class="stack" id="new-sessions" hidden></ul>
+  </section>
+
+  <footer id="stats"></footer>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(() => {
+"use strict";
+
+const REPO = "https://github.com/prox1mob/git1";
+const SESSION_URL = (id) => "https://claude.ai/code/" + id;
+const BRANCH_URL = (b) => REPO + "/tree/" + b.split("/").map(encodeURIComponent).join("/");
+const STATUS = {
+  stuck:  { label: "Needs a push", cls: "st-stuck",  group: "Needs a push" },
+  active: { label: "In progress",  cls: "st-active", group: "In progress" },
+  live:   { label: "On GitHub",    cls: "st-live",   group: "On GitHub" },
+  paused: { label: "Paused",       cls: "st-paused", group: "Paused" },
+};
+const ORDER = ["stuck", "active", "live", "paused"];
+
+const S = {
+  db: null, dbState: "loading", readOnly: false, stale: false,
+  projects: [], ideas: [], wins: [], focus: null, ignored: [],
+  loaded: { projects: false, focus: false },
+  focusMode: "view", justDone: null, openId: null, drafts: {},
+  busy: false, timer: null,
+  mcp: undefined, live: null, liveAt: 0, syncState: "idle", syncMsg: "",
+  lastDeleted: null,
+};
+
+/* ---------- small helpers ---------- */
+const $ = (s) => document.querySelector(s);
+function el(tag, attrs, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") n.className = v;
+    else if (k === "text") n.textContent = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat()) {
+    if (kid == null || kid === false) continue;
+    n.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  }
+  return n;
+}
+const nowIso = () => new Date().toISOString();
+const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+function dayLabel(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const days = Math.round((startOfDay(new Date()) - startOfDay(d)) / 864e5);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 7) return d.toLocaleDateString(undefined, { weekday: "long" });
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+}
+function slug(text) {
+  const base = String(text).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "project";
+  return base + "-" + Math.random().toString(36).slice(2, 6);
+}
+const byOrder = (a, b) => (a.order ?? 999) - (b.order ?? 999) || String(a.name).localeCompare(String(b.name));
+const project = (id) => S.projects.find((p) => p.id === id) || null;
+const chip = (status) => {
+  const s = STATUS[status] || STATUS.active;
+  return el("span", { class: "chip " + s.cls }, s.label);
+};
+function extLink(href, text) {
+  return el("a", { href, target: "_blank", rel: "noopener" }, text + " ↗");
+}
+function draftInput(id, value, attrs) {
+  const input = el("input", Object.assign({ class: "field", id, autocomplete: "off" }, attrs));
+  input.value = id in S.drafts ? S.drafts[id] : (value || "");
+  input.addEventListener("input", () => { S.drafts[id] = input.value; });
+  return input;
+}
+
+let toastTimer = 0;
+function toast(text, action) {
+  const t = $("#toast");
+  t.replaceChildren(el("span", null, text), action ? el("button", { type: "button", onclick: () => { t.hidden = true; action.run(); } }, action.label) : null);
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, action ? 6000 : 3200);
+}
+
+/* ---------- writes ---------- */
+async function write(fn) {
+  if (!S.db) { toast("Open this page in Claude to save changes."); return false; }
+  if (S.readOnly) { toast("Only the owner can change this board."); return false; }
+  try { await fn(); return true; }
+  catch (e) {
+    const c = e && e.code;
+    if (c === "invalid_argument") { S.readOnly = true; toast("This board is read-only for you."); }
+    else if (c === "quota_exceeded") toast("Storage is full. Delete a few old ideas or wins, then try again.");
+    else if (c === "resource_exhausted") toast("Too many changes at once. Wait a moment and try again.");
+    else if (c === "revoked") toast("This page lost access to its saved data. Reload it in Claude.");
+    else toast("Couldn't save that. Check your connection and try again.");
+    renderAll();
+    return false;
+  }
+}
+const projDoc = (id) => S.db.doc("projects/" + id);
+const addWin = (p, text) => S.db.collection("wins").add({ projectId: p.id, name: p.name, text, doneAt: nowIso() });
+
+/* ---------- focus logic ---------- */
+function currentFocus() { return S.focus && S.focus.projectId ? project(S.focus.projectId) : null; }
+function pickProject(excludeId) {
+  const pool = S.projects.filter((p) => p.status !== "paused" && p.id !== excludeId);
+  if (!pool.length) return null;
+  // Stuck work is a quick, high-value win (one message saves it), so it comes up more often.
+  const weight = (p) => (p.status === "stuck" ? 3 : 2) * (p.next ? 1 : 0.5);
+  let r = Math.random() * pool.reduce((sum, p) => sum + weight(p), 0);
+  for (const p of pool) { r -= weight(p); if (r <= 0) return p; }
+  return pool[pool.length - 1];
+}
+async function focusOn(id) {
+  S.focusMode = "view"; S.justDone = null; stopTimer(); delete S.drafts["focus-step"];
+  const ok = await write(() => S.db.doc("meta/focus").set({ projectId: id, pickedAt: nowIso() }));
+  if (ok) window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+}
+async function pickAnother(excludeId) {
+  const p = pickProject(excludeId);
+  if (!p) { toast("Nothing else to pick. Start one of your parked ideas."); return; }
+  await focusOn(p.id);
+}
+async function markDone(p) {
+  if (S.busy) return;
+  const text = p.next || "Worked on " + p.name;
+  S.busy = true; renderFocus();
+  const ok = await write(async () => {
+    await addWin(p, text);
+    await projDoc(p.id).update({ next: "", updatedAt: nowIso() });
+  });
+  S.busy = false;
+  if (ok) { S.justDone = { pid: p.id, text }; S.focusMode = "view"; stopTimer(); delete S.drafts["focus-step"]; }
+  renderAll();
+}
+async function saveStep(p, inputId) {
+  const value = (S.drafts[inputId] ?? $("#" + inputId)?.value ?? "").trim();
+  if (!value) { toast("Write the step first."); return; }
+  const ok = await write(() => projDoc(p.id).update({ next: value.slice(0, 200), updatedAt: nowIso() }));
+  if (ok) { delete S.drafts[inputId]; S.focusMode = "view"; toast("Step saved."); }
+  renderAll();
+}
+
+/* ---------- 15-minute timer ---------- */
+function toggleTimer() {
+  if (S.timer) { stopTimer(); renderFocus(); return; }
+  S.timer = { end: Date.now() + 15 * 60e3, id: setInterval(tick, 1000) };
+  renderFocus();
+}
+function stopTimer() { if (S.timer) clearInterval(S.timer.id); S.timer = null; }
+function tick() {
+  if (!S.timer) return;
+  const left = Math.max(0, S.timer.end - Date.now());
+  const t = $("#timer");
+  if (t) {
+    const m = Math.floor(left / 60000), s = Math.floor(left / 1000) % 60;
+    t.textContent = left ? m + ":" + String(s).padStart(2, "0") + " left" : "Time's up. Done, or another 15?";
+  }
+  if (!left) { clearInterval(S.timer.id); }
+}
+
+/* ---------- rendering ---------- */
+function renderHeader() {
+  const d = new Date();
+  const h = d.getHours();
+  const date = d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+  $("#bar-meta").textContent = (h >= 23 || h < 5) ? "Late night. One step, then rest." : date;
+}
+
+function renderFocus() {
+  const box = $("#focus");
+  if (S.dbState === "absent") {
+    box.replaceChildren(
+      el("p", { class: "sky-title" }, "Open this page in Claude to load your board."),
+      el("p", { class: "sky-note" }, "Your projects, ideas and wins are saved with this page in Claude. Outside Claude there is nothing to load."));
+    return;
+  }
+  if (!S.loaded.projects || !S.loaded.focus) {
+    box.replaceChildren(el("p", { class: "sky-note" }, S.stale
+      ? "Can't reach your saved board yet. It fills in by itself when the connection is back."
+      : "Loading your board…"));
+    return;
+  }
+  if (!S.projects.length) {
+    box.replaceChildren(
+      el("p", { class: "sky-title" }, "No projects yet."),
+      el("p", { class: "sky-note" }, "Park an idea below, then start it to put it on the board."));
+    return;
+  }
+  const p = currentFocus();
+  if (!p) {
+    box.replaceChildren(
+      el("p", { class: "sky-title" }, "Nothing picked yet."),
+      el("p", { class: "sky-note" }, "Let the board choose, so you don't have to."),
+      el("div", { class: "row" }, el("button", { class: "btn btn-signal", type: "button", id: "pick-btn", onclick: () => pickAnother(null) }, "Pick one for me")));
+    return;
+  }
+
+  const parts = [el("div", { class: "focus-head" }, el("span", { class: "focus-proj" }, p.name), chip(p.status))];
+  if (S.justDone && S.justDone.pid === p.id) parts.push(el("p", { class: "won" }, "✓ Done: " + S.justDone.text));
+
+  const editing = S.focusMode === "edit" || !p.next;
+  if (editing) {
+    const form = el("form", { onsubmit: (e) => { e.preventDefault(); saveStep(p, "focus-step"); } },
+      el("label", { for: "focus-step" }, p.next ? "Change the step" : "What's the next tiny step?"),
+      draftInput("focus-step", p.next, { maxlength: "200", placeholder: "Something you can finish in 15 minutes" }),
+      el("div", { class: "row" },
+        el("button", { class: "btn btn-signal", type: "submit" }, "Save step"),
+        p.next
+          ? el("button", { class: "btn btn-sky", type: "button", onclick: () => { S.focusMode = "view"; delete S.drafts["focus-step"]; renderFocus(); } }, "Cancel")
+          : el("button", { class: "btn btn-sky", type: "button", onclick: () => pickAnother(p.id) }, "Pick something else")));
+    parts.push(form);
+  } else {
+    parts.push(el("p", { class: "step" }, p.next));
+    parts.push(el("div", { class: "row" },
+      el("button", { class: "btn btn-signal", type: "button", id: "done-btn", disabled: S.busy, onclick: () => markDone(p) }, "Done ✓"),
+      el("button", { class: "btn btn-sky", type: "button", onclick: () => pickAnother(p.id) }, "Not now"),
+      el("button", { class: "btn btn-sky", type: "button", onclick: () => { S.focusMode = "edit"; renderFocus(); $("#focus-step")?.focus(); } }, "Edit"),
+      el("button", { class: "btn btn-sky", type: "button", onclick: toggleTimer, "aria-pressed": S.timer ? "true" : "false" }, S.timer ? "Stop timer" : "15-min timer")));
+    if (S.timer) parts.push(el("p", { class: "timer", id: "timer", "aria-live": "off" }));
+  }
+  const links = [];
+  if (p.sessionId) links.push(extLink(SESSION_URL(p.sessionId), "Open session"));
+  if (p.branch && p.status !== "stuck") links.push(extLink(BRANCH_URL(p.branch), "Branch"));
+  for (const b of p.builds || []) links.push(extLink(b.url, b.label));
+  if (links.length) parts.push(el("div", { class: "links" }, links));
+  box.replaceChildren(...parts);
+  tick();
+}
+
+function renderRescue() {
+  const stuck = S.projects.filter((p) => p.status === "stuck").sort(byOrder);
+  $("#rescue").hidden = !stuck.length;
+  $("#rescue-count").textContent = stuck.length ? String(stuck.length) : "";
+  $("#rescue-list").replaceChildren(...stuck.map((p) => el("li", { class: "rescue" },
+    el("div", { class: "r-top" }, el("span", { class: "r-name" }, p.name), p.branch ? el("span", { class: "mono" }, p.branch) : null),
+    p.waiting ? el("p", { class: "r-why" }, p.waiting) : null,
+    el("div", { class: "row" },
+      p.sessionId ? el("a", { class: "btn btn-small btn-signal", href: SESSION_URL(p.sessionId), target: "_blank", rel: "noopener" }, "Open session ↗") : null,
+      el("button", { class: "btn btn-small", type: "button", onclick: () => rescued(p) }, "It's on GitHub now"),
+      p.branch ? el("a", { class: "btn-text", href: BRANCH_URL(p.branch), target: "_blank", rel: "noopener" }, "Check branch ↗") : null))));
+}
+async function rescued(p) {
+  const ok = await write(async () => {
+    await projDoc(p.id).update({ status: "live", waiting: "", next: "", updatedAt: nowIso() });
+    await addWin(p, "Saved " + p.name + " to GitHub");
+  });
+  if (ok) toast(p.name + " is safe on GitHub.");
+}
+
+function liveFor(p) {
+  if (!S.live || !p.sessionId) return null;
+  const s = S.live.get(p.sessionId);
+  return s ? bucketLabel(s) : null;
+}
+function renderProjects() {
+  const box = $("#project-groups");
+  $("#proj-count").textContent = S.projects.length ? String(S.projects.length) : "";
+  if (!S.projects.length) {
+    box.replaceChildren(el("p", { class: "empty stack" }, S.dbState === "absent" ? "Open this page in Claude to see your projects." : "Your projects will appear here."));
+    return;
+  }
+  const groups = [];
+  for (const st of ORDER) {
+    const list = S.projects.filter((p) => (STATUS[p.status] ? p.status : "active") === st).sort(byOrder);
+    if (!list.length) continue;
+    groups.push(el("h3", { class: "group-h" }, STATUS[st].group + " · " + list.length));
+    groups.push(el("ul", { class: "stack" }, list.map(projectItem)));
+  }
+  box.replaceChildren(...groups);
+}
+function projectItem(p) {
+  const open = S.openId === p.id;
+  const live = liveFor(p);
+  const li = el("li", { class: "proj" + (open ? " open" : "") },
+    el("button", { class: "proj-row", type: "button", "aria-expanded": open ? "true" : "false", id: "row-" + p.id,
+      onclick: () => { S.openId = open ? null : p.id; renderProjects(); $("#row-" + p.id)?.focus(); } },
+      el("span", { class: "p-name" }, p.name), chip(p.status),
+      p.pitch ? el("span", { class: "p-pitch" }, p.pitch) : null,
+      live ? el("span", { class: "p-live" }, "Claude: " + live) : null));
+  if (!open) return li;
+
+  const stepId = "step-" + p.id, statusId = "status-" + p.id;
+  const select = el("select", { class: "field", id: statusId, onchange: async (e) => {
+    const value = e.target.value;
+    const ok = await write(() => projDoc(p.id).update({ status: value, updatedAt: nowIso() }));
+    if (ok) toast(p.name + ": " + STATUS[value].label);
+  } }, ORDER.map((st) => el("option", { value: st, selected: p.status === st }, STATUS[st].label)));
+  const links = [];
+  if (p.branch) links.push(extLink(BRANCH_URL(p.branch), "Branch"));
+  if (p.sessionId) links.push(extLink(SESSION_URL(p.sessionId), "Session"));
+  for (const b of p.builds || []) links.push(extLink(b.url, b.label));
+
+  li.append(el("div", { class: "proj-body" },
+    p.status === "stuck" && p.waiting ? el("p", { class: "r-why" }, p.waiting) : null,
+    el("form", { onsubmit: (e) => { e.preventDefault(); saveStep(p, stepId); } },
+      el("label", { for: stepId }, "Next step"),
+      el("div", { class: "inline" },
+        draftInput(stepId, p.next, { maxlength: "200", placeholder: "One small, concrete step" }),
+        el("button", { class: "btn", type: "submit" }, "Save"))),
+    el("div", { style: "display:grid;gap:8px" }, el("label", { for: statusId }, "Status"), select),
+    links.length ? el("div", { class: "links" }, links) : null,
+    el("div", { class: "row" },
+      S.focus?.projectId === p.id
+        ? el("span", { class: "note" }, "This is your one thing right now.")
+        : el("button", { class: "btn btn-small btn-signal", type: "button", onclick: () => focusOn(p.id) }, "Make this my one thing"))));
+  return li;
+}
+
+function renderIdeas() {
+  $("#ideas-count").textContent = S.ideas.length ? String(S.ideas.length) : "";
+  const inMotion = S.projects.filter((p) => p.status === "active" || p.status === "stuck").length;
+  const nudge = $("#wip-nudge");
+  nudge.hidden = inMotion < 4;
+  nudge.textContent = "You have " + inMotion + " projects in motion. Parking new ideas keeps them safe while you finish one.";
+  const list = $("#idea-list");
+  if (!S.ideas.length) { list.replaceChildren(el("li", { class: "empty" }, "No parked ideas yet.")); return; }
+  list.replaceChildren(...S.ideas.map((i) => el("li", { class: "idea" },
+    el("div", { style: "display:grid;gap:2px;min-width:0" },
+      el("span", { class: "idea-text" }, i.text),
+      el("span", { class: "idea-meta" }, "parked " + dayLabel(i.createdAt))),
+    el("div", { class: "row", style: "gap:4px" },
+      el("button", { class: "btn btn-small", type: "button", onclick: () => startIdea(i) }, "Start"),
+      el("button", { class: "btn-text", type: "button", "aria-label": "Delete idea: " + i.text, onclick: () => deleteIdea(i) }, "Delete")))));
+}
+async function startIdea(i) {
+  const name = i.text.length > 48 ? i.text.slice(0, 46).trimEnd() + "…" : i.text;
+  const id = slug(name);
+  const ok = await write(async () => {
+    await projDoc(id).set({ name, pitch: i.text, status: "active", next: "Open a new Claude Code session and describe this idea in two sentences.", startedAt: nowIso(), updatedAt: nowIso(), order: 50 });
+    await S.db.doc("ideas/" + i.id).delete();
+  });
+  if (ok) { S.openId = id; toast("Moved to your projects."); }
+}
+async function deleteIdea(i) {
+  const { id, ...data } = i;
+  const ok = await write(() => S.db.doc("ideas/" + id).delete());
+  if (ok) toast("Idea deleted.", { label: "Undo", run: () => write(() => S.db.doc("ideas/" + id).set(data)) });
+}
+
+function renderWins() {
+  const weekAgo = Date.now() - 7 * 864e5;
+  const thisWeek = S.wins.filter((w) => new Date(w.doneAt).getTime() >= weekAgo).length;
+  $("#wins-count").textContent = thisWeek ? thisWeek + " this week" : "";
+  const list = $("#win-list");
+  if (!S.wins.length) { list.replaceChildren(el("li", { class: "empty" }, "Finish a step and it shows up here.")); return; }
+  list.replaceChildren(...S.wins.slice(0, 8).map((w) => el("li", { class: "win" },
+    el("span", { class: "tick", "aria-hidden": "true" }, "✓"),
+    el("span", null, w.text, w.name && !String(w.text).includes(w.name) ? el("span", { class: "mono" }, " · " + w.name) : null),
+    el("span", { class: "win-day" }, dayLabel(w.doneAt)))));
+}
+
+/* ---------- live sessions (Claude Code Remote connector) ---------- */
+function bucketLabel(s) {
+  const b = String(s.status_bucket || s.status || "").toUpperCase();
+  if (b.includes("BLOCKED")) return "waiting for you";
+  if (b.includes("WORKING") || b.includes("RUNNING")) return "working";
+  if (b.includes("REVIEW")) return "ready to review";
+  if (b.includes("FAILED")) return "hit an error";
+  if (b.includes("COMPLETED")) return "finished";
+  return "idle";
+}
+function parseSessions(res) {
+  let p = res && res.payload;
+  const tryParse = (text) => {
+    if (typeof text !== "string") return null;
+    const a = text.indexOf("{"), b = text.lastIndexOf("}");
+    if (a < 0 || b <= a) return null;
+    try { return JSON.parse(text.slice(a, b + 1)); } catch { return null; }
+  };
+  if (typeof p === "string") p = tryParse(p);
+  if (!p && res && Array.isArray(res.content)) {
+    const t = res.content.find((c) => c && c.type === "text");
+    p = t ? tryParse(t.text) : null;
+  }
+  const list = p && (p.ccr?.data ?? p.data ?? p.sessions ?? (Array.isArray(p) ? p : null));
+  return Array.isArray(list) ? list.filter((s) => s && typeof s.id === "string") : null;
+}
+function mcpMessage(e) {
+  switch (e && e.code) {
+    case "needs_reauth": return "Your Claude Code connection needs a refresh. Reconnect it in claude.ai Settings → Connectors, then try again.";
+    case "server_not_connected":
+    case "server_not_found": return "Claude Code Remote isn't connected for your account. Add it in claude.ai Settings → Connectors.";
+    case "selection_required": return "Pick which Claude Code Remote connection to use when Claude asks, then try again.";
+    case "not_in_manifest":
+    case "approval_required":
+    case "consent_required": return "This page isn't allowed to read your sessions yet. Tap Check sessions and choose Allow.";
+    case "blocked_by_policy": return "Your organization doesn't allow this page to read sessions.";
+    case "server_unavailable":
+    case "rate_limited": return "Claude Code didn't answer just now. Try again in a minute.";
+    case "not_granted":
+    case "capability_disabled":
+    case "capability_removed": S.mcp = null; return "Session checks aren't available in this view.";
+    case "tool_error": return "Claude Code reported a problem: " + String(e.message || "unknown").slice(0, 160);
+    default: return "Couldn't check sessions (" + ((e && e.code) || "unknown error") + "). Try again later.";
+  }
+}
+async function syncSessions() {
+  if (!S.mcp || S.syncState === "loading") return;
+  S.syncState = "loading"; S.syncMsg = ""; renderSync();
+  try {
+    const res = await S.mcp.callTool("Claude Code Remote", "list_sessions", { limit: 50 });
+    const list = parseSessions(res);
+    if (!list) { S.syncState = "error"; S.syncMsg = "Claude Code answered, but not in a form this page can read."; }
+    else { S.live = new Map(list.map((s) => [s.id, s])); S.liveAt = (res.cache && res.cache.storedAt) || Date.now(); S.syncState = "ok"; }
+  } catch (e) {
+    S.syncState = "error"; S.syncMsg = mcpMessage(e);
+  }
+  renderAll();
+}
+function renderSync() {
+  const btn = $("#sync-btn"), note = $("#sync-note"), sum = $("#live-sum"), list = $("#new-sessions");
+  if (S.mcp === null) {
+    btn.disabled = true; sum.textContent = "";
+    note.hidden = false; note.className = "note";
+    note.textContent = S.syncMsg || "Session checks work when this page is open in Claude.";
+    list.hidden = true; return;
+  }
+  btn.disabled = S.mcp === undefined || S.syncState === "loading";
+  btn.textContent = S.syncState === "loading" ? "Checking…" : (S.live ? "Check again" : "Check sessions");
+  note.hidden = !S.syncMsg; note.className = "note" + (S.syncState === "error" ? " err" : ""); note.textContent = S.syncMsg;
+  if (!S.live) { sum.textContent = ""; list.hidden = true; return; }
+
+  const counts = {};
+  for (const s of S.live.values()) { const k = bucketLabel(s); counts[k] = (counts[k] || 0) + 1; }
+  const order = ["waiting for you", "working", "ready to review", "hit an error", "finished", "idle"];
+  sum.textContent = order.filter((k) => counts[k]).map((k) => counts[k] + " " + k).join(" · ") +
+    " · checked " + new Date(S.liveAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+
+  const known = new Set(S.projects.map((p) => p.sessionId).filter(Boolean));
+  const fresh = [...S.live.values()].filter((s) => !known.has(s.id) && !S.ignored.includes(s.id))
+    .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || ""))).slice(0, 6);
+  list.hidden = !fresh.length;
+  list.replaceChildren(
+    el("li", { class: "newsess" }, el("strong", null, "Sessions not on your board")),
+    ...fresh.map((s) => {
+      const note = s.post_turn_summary && (s.post_turn_summary.needs_action || s.post_turn_summary.recent_action);
+      return el("li", { class: "newsess" },
+        el("div", { class: "r-top" }, el("span", { class: "r-name" }, s.title || "Untitled session"), el("span", { class: "mono" }, bucketLabel(s))),
+        note ? el("p", { class: "r-why" }, String(note).slice(0, 220)) : null,
+        el("div", { class: "row" },
+          el("button", { class: "btn btn-small btn-signal", type: "button", onclick: () => addSession(s) }, "Add to board"),
+          el("button", { class: "btn btn-small", type: "button", onclick: () => ignoreSession(s) }, "Not a project"),
+          el("a", { class: "btn-text", href: SESSION_URL(s.id), target: "_blank", rel: "noopener" }, "Open ↗")));
+    }));
+}
+async function addSession(s) {
+  const name = String(s.title || "Untitled session").slice(0, 60);
+  const ok = await write(() => projDoc(slug(name)).set({
+    name, pitch: "", status: "active", sessionId: s.id, next: "",
+    startedAt: s.created_at || nowIso(), updatedAt: nowIso(), order: 60,
+  }));
+  if (ok) toast(name + " is on your board.");
+}
+async function ignoreSession(s) {
+  await write(() => S.db.doc("meta/ignored").set({ ids: [...new Set([...S.ignored, s.id])].slice(-300) }));
+}
+
+function renderStats() {
+  const f = $("#stats");
+  if (!S.projects.length) { f.textContent = ""; return; }
+  const starts = S.projects.map((p) => new Date(p.startedAt).getTime()).filter((t) => !isNaN(t));
+  const since = starts.length ? new Date(Math.min(...starts)).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : null;
+  const n = (st) => S.projects.filter((p) => p.status === st).length;
+  f.textContent = [
+    S.projects.length + " projects" + (since ? " since " + since : ""),
+    n("live") + " on GitHub",
+    n("stuck") ? n("stuck") + " waiting for a push" : null,
+    S.ideas.length + " ideas parked",
+  ].filter(Boolean).join(" · ");
+}
+
+function renderAll() {
+  const a = document.activeElement;
+  const keep = a && a.id ? { id: a.id, s: a.selectionStart, e: a.selectionEnd } : null;
+  renderHeader(); renderFocus(); renderRescue(); renderProjects(); renderIdeas(); renderWins(); renderSync(); renderStats();
+  if (keep && document.activeElement !== document.getElementById(keep.id)) {
+    const n = document.getElementById(keep.id);
+    if (n) { n.focus({ preventScroll: true }); try { if (keep.s != null) n.setSelectionRange(keep.s, keep.e); } catch {} }
+  }
+}
+
+/* ---------- static controls ---------- */
+$("#idea-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = $("#idea-input");
+  const text = input.value.trim();
+  if (!text) { toast("Type the idea first."); return; }
+  const ok = await write(() => S.db.collection("ideas").add({ text: text.slice(0, 280), createdAt: nowIso() }));
+  if (ok) { input.value = ""; toast("Parked. It'll be here when you're ready."); }
+});
+$("#copy-msg").addEventListener("click", () => {
+  const code = $("#push-msg");
+  const fallback = () => {
+    const r = document.createRange(); r.selectNodeContents(code);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    toast("Selected. Copy it from your keyboard menu.");
+  };
+  try {
+    navigator.clipboard.writeText(code.textContent).then(() => toast("Copied. Paste it into the session."), fallback);
+  } catch { fallback(); }
+});
+$("#sync-btn").addEventListener("click", syncSessions);
+setInterval(renderHeader, 60000);
+
+/* ---------- boot ---------- */
+async function boot() {
+  renderAll();
+  const claude = window.claude;
+  if (!claude || typeof claude.use !== "function") { S.dbState = "absent"; S.mcp = null; renderAll(); return; }
+
+  claude.use("mcp").then((m) => { S.mcp = m || null; renderSync(); }, () => { S.mcp = null; renderSync(); });
+
+  let db = null;
+  try { db = await claude.use("db"); } catch { db = null; }
+  if (!db) { S.dbState = "absent"; renderAll(); return; }
+  S.db = db; S.dbState = "ready";
+
+  claude.use("user").then(async (user) => {
+    try { if (user && (await user.can("data.write")) === false) { S.readOnly = true; renderAll(); } } catch {}
+  }, () => {});
+
+  const timer = setTimeout(() => { S.stale = true; renderAll(); }, 10000);
+  const confirmed = (snap) => { if (!snap.metadata.fromCache) { clearTimeout(timer); S.stale = false; } };
+  const onError = () => { clearTimeout(timer); S.stale = true; renderAll(); };
+
+  db.collection("projects").onSnapshot((snap) => {
+    S.projects = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+    S.loaded.projects = true; confirmed(snap); renderAll();
+  }, onError);
+  db.doc("meta/focus").onSnapshot((snap) => {
+    S.focus = snap.exists ? snap.data() : null;
+    S.loaded.focus = true; renderAll();
+  }, onError);
+  db.collection("ideas").orderBy("createdAt", "desc").onSnapshot((snap) => {
+    S.ideas = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderAll();
+  }, onError);
+  db.collection("wins").orderBy("doneAt", "desc").limit(30).onSnapshot((snap) => {
+    S.wins = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderAll();
+  }, onError);
+  db.doc("meta/ignored").onSnapshot((snap) => {
+    S.ignored = snap.exists && Array.isArray(snap.data().ids) ? snap.data().ids : []; renderAll();
+  }, onError);
+}
+boot();
+})();
+</script>
